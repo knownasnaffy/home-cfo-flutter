@@ -36,27 +36,30 @@ class TransactionHistoryScreen extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start, // Changed from end to start for better flex wrapping
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'History',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                color: AppTheme.primary,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'History',
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  color: AppTheme.primary,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Manage your domestic maintenance records.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.onSurfaceVariant,
+              const SizedBox(height: 8),
+              Text(
+                'Manage your domestic maintenance records.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.onSurfaceVariant,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeaderButton(
               context: context,
