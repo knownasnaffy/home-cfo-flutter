@@ -353,7 +353,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.outlineVariant, style: BorderStyle.solid), // Note: Design has dashed, but flutter standard border is solid. Can use a package for dashed, but using solid for simplicity as requested 'adapt design patterns'.
+        border: Border.all(color: AppTheme.outlineVariant, style: BorderStyle.solid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,62 +369,68 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total Usage Since Last Reading',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        '0',
-                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          color: AppTheme.primary,
-                          fontSize: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'kWh',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppTheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppTheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                    child: Text(
-                      'Normal Pace',
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total Usage Since Last Reading',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.onSecondaryContainer,
+                        color: AppTheme.onSurfaceVariant,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Avg. 14.2 kWh / day',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '0',
+                          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            color: AppTheme.primary,
+                            fontSize: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'kWh',
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: AppTheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                      child: Text(
+                        'Normal Pace',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.onSecondaryContainer,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Avg. 14.2 kWh / day',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
