@@ -182,6 +182,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: GestureDetector(

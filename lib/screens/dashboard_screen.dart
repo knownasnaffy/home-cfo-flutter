@@ -7,7 +7,6 @@ import 'new_ironing_transaction_screen.dart';
 import 'transaction_history_screen.dart';
 import 'ironing_home_screen.dart';
 import 'electricity_home_screen.dart';
-import 'transaction_detail_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -17,6 +16,7 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: const TopAppBar(
         showBackButton: false,
+        showSync: false,
         avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAUO4DaNKotXn1HH2ylb4o4Qe6-6NL0TsJwO12xAQxWZAFgpmVKMDyb10qWkoE_2jmEXPH9SoEWvOISRQzpSpEiXil3adXdnc-N-HDKPjcgSUkUd5i36EPg0lcrBa6mC_ug9fYoOh5zyjq8_5Dd-MQQmi_7T7a_ruKrYh0GUC7xG21r_JQ-v3ZEtWvo7uoLKqW46PjHsULB3A4OVyeLjtK5XfHcEmFJcNx_SntM3Fi5-SpupUg865ugMuJL1QD4Sz1bo6q-yPSfvkw',
       ),
       body: SingleChildScrollView(
@@ -85,7 +85,7 @@ class DashboardScreen extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
-      childAspectRatio: 1, // roughly square
+      childAspectRatio: 1,
       children: [
         _buildActionCard(
           context: context,
@@ -460,7 +460,6 @@ class DashboardScreen extends StatelessWidget {
                 amount: '-\$45.00',
                 amountColor: AppTheme.error,
                 date: 'Yesterday',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceVariant),
               _buildLedgerRow(
@@ -471,7 +470,6 @@ class DashboardScreen extends StatelessWidget {
                 amount: '+\$1,200.00',
                 amountColor: AppTheme.onSecondaryContainer,
                 date: 'Oct 28',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
             ],
           ),
@@ -488,66 +486,62 @@ class DashboardScreen extends StatelessWidget {
     required String amount,
     required Color amountColor,
     required String date,
-    required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.surfaceContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: AppTheme.outline),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: AppTheme.surfaceContainer,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppTheme.onSurface,
-                      ),
+                child: Icon(icon, color: AppTheme.outline),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: AppTheme.onSurface,
                     ),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
-                      ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.onSurfaceVariant,
                     ),
-                  ],
-                ),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  amount,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: amountColor,
-                    fontSize: 18,
                   ),
+                ],
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                amount,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: amountColor,
+                  fontSize: 18,
                 ),
-                Text(
-                  date,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
-                  ),
+              ),
+              Text(
+                date,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.onSurfaceVariant,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

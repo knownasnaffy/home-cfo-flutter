@@ -19,7 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const TopAppBar(
-        showBackButton: true,
+        showBackButton: false,
         showSync: false,
         avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA9fCfVRezncP62QuTh871VCZJa8h3hYIVg_Wmbyh1UuvNn-vGfLzzK1M8UBhyRphhsW2xIKgNlvZBnUoi19jWOBSZBJs-Jkt1pri154udhVpnf3YqIyMUkbsCi4Z7kqeBC348xcpZeXaQk4_Iku1mzfjG4MVFjdz0CAQqQhK07WXIqGXKONHWkoAX7WYUPNBYRssxi8gPRbvkqHvdTQ-lvoeqOjv_DeR7ob6TP1t_1UpJUklxrU4drZOUBo_zWZQq7m0Ptd0ifCl0',
       ),

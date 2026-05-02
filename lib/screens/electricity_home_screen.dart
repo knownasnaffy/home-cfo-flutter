@@ -13,7 +13,7 @@ class ElectricityHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const TopAppBar(
-        showBackButton: true,
+        showBackButton: false,
         showSync: false,
         avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBorVayAGT-BuYHRkUdL-xQKbx-CZ6VVdBjOSX1uTpiGPFzMQcWk2Lnhw57rXiKZyc0B-5VqpdwCdPDORBJt2Km2Knu22je0bLcPEGTaUTuDwaFYL0W0JLK_WXfhzStxLllvDTy20ol5MdKrEYC48b6YPZ5DB1FbAiLYb7g80cP-Msl_X2O0PlD6H38ji0jK5KD-CsMLNkLoM2MX9uTWhMIWWxXJlju6NKPvlw34oUoIYr2TFpub_itxudnw9jieEUjfw1Q9pflpgk',
       ),
