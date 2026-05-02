@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import 'new_ironing_transaction_summary_screen.dart';
+import 'new_ironing_transaction_screen.dart';
+import 'reset_transaction_screen.dart';
+import 'transaction_history_screen.dart';
+import 'transaction_detail_screen.dart';
 
 class IroningHomeScreen extends StatelessWidget {
   const IroningHomeScreen({super.key});
@@ -30,7 +35,7 @@ class IroningHomeScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewIroningTransactionScreen())),
         backgroundColor: AppTheme.primaryContainer,
         foregroundColor: Colors.white,
         child: const Icon(Symbols.add, size: 32),
@@ -119,7 +124,7 @@ class IroningHomeScreen extends StatelessWidget {
                   Container(
                     width: 1,
                     height: 32,
-                    color: Colors.grey[700], // rough slate-700 equivalent
+                    color: Colors.grey[700],
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -170,6 +175,7 @@ class IroningHomeScreen extends StatelessWidget {
               iconColor: AppTheme.onSecondaryContainer,
               title: 'New Regular Transaction',
               subtitle: 'Standard 15 clothes batch',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewIroningTransactionSummaryScreen())),
             ),
             const SizedBox(height: 8),
             _buildActionItem(
@@ -179,6 +185,7 @@ class IroningHomeScreen extends StatelessWidget {
               iconColor: AppTheme.onPrimaryFixed,
               title: 'New Custom Transaction',
               subtitle: 'Manual count entry',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewIroningTransactionScreen())),
             ),
             const SizedBox(height: 8),
             _buildActionItem(
@@ -188,6 +195,7 @@ class IroningHomeScreen extends StatelessWidget {
               iconColor: AppTheme.onErrorContainer,
               title: 'New Reset Transaction',
               subtitle: 'Clear outstanding balance',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ResetTransactionScreen())),
             ),
           ],
         ),
@@ -202,6 +210,7 @@ class IroningHomeScreen extends StatelessWidget {
     required Color iconColor,
     required String title,
     required String subtitle,
+    required VoidCallback onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -212,7 +221,7 @@ class IroningHomeScreen extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -272,7 +281,7 @@ class IroningHomeScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionHistoryScreen())),
               child: Text(
                 'View All',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -305,6 +314,7 @@ class IroningHomeScreen extends StatelessWidget {
                 subtitle: 'Yesterday, 6:45 PM',
                 amount: '-₹150.00',
                 amountColor: AppTheme.error,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceVariant),
               _buildActivityRow(
@@ -314,6 +324,7 @@ class IroningHomeScreen extends StatelessWidget {
                 subtitle: '18 Oct, 11:20 AM',
                 amount: '+₹500.00',
                 amountColor: AppTheme.secondary,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceVariant),
               _buildActivityRow(
@@ -323,6 +334,7 @@ class IroningHomeScreen extends StatelessWidget {
                 subtitle: '15 Oct, 9:15 AM',
                 amount: '-₹220.00',
                 amountColor: AppTheme.error,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
             ],
           ),
@@ -338,50 +350,54 @@ class IroningHomeScreen extends StatelessWidget {
     required String subtitle,
     required String amount,
     required Color amountColor,
+    required VoidCallback onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: AppTheme.surfaceContainerLow,
-                  shape: BoxShape.circle,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.surfaceContainerLow,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: AppTheme.onSurfaceVariant, size: 24),
                 ),
-                child: Icon(icon, color: AppTheme.onSurfaceVariant, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppTheme.onSurface,
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppTheme.onSurface,
+                      ),
                     ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.outline,
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.outline,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Text(
-            amount,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: amountColor,
-              fontWeight: FontWeight.w600,
+                  ],
+                ),
+              ],
             ),
-          ),
-        ],
+            Text(
+              amount,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: amountColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

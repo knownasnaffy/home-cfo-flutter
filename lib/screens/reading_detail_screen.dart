@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import 'history_screen.dart';
 
 class ReadingDetailScreen extends StatelessWidget {
   const ReadingDetailScreen({super.key});
@@ -452,7 +453,7 @@ class ReadingDetailScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
         icon: const Icon(Symbols.history, color: AppTheme.outline),
         label: const Text('View Meter History'),
         style: OutlinedButton.styleFrom(

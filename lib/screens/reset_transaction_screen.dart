@@ -247,7 +247,7 @@ class ResetTransactionScreen extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () => Navigator.pop(context),
             icon: const Icon(Symbols.history_edu, color: AppTheme.onPrimary),
             label: const Text('Confirm Balance Reset'),
             style: ElevatedButton.styleFrom(
@@ -266,7 +266,7 @@ class ResetTransactionScreen extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: OutlinedButton(
-            onPressed: () {},
+            onPressed: () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.onSurfaceVariant,
               side: const BorderSide(color: AppTheme.outlineVariant),

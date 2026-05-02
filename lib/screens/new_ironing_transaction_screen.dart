@@ -324,7 +324,6 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
   }
 
   Widget _buildDecorativeCard(BuildContext context) {
-    // Note: Since this is mobile only, they stack
     return Column(
       children: [
         Container(
@@ -403,7 +402,6 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
     );
   }
 
-  // Need custom class for simple gradient rendering internally
   Gradient linearBinding({required Alignment begin, required Alignment end, required List<Color> colors}) {
      return LinearGradient(begin: begin, end: end, colors: colors);
   }
@@ -415,7 +413,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryContainer,
               foregroundColor: Colors.white,

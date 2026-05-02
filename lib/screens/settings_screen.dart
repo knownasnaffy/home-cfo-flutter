@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import 'history_screen.dart';
+import 'sync_setup_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -82,14 +84,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             icon: Symbols.payments,
             title: 'Ironing Price History',
-            onTap: () {},
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
           ),
           const Divider(height: 1, color: AppTheme.surfaceVariant),
           _buildListTile(
             context: context,
             icon: Symbols.bolt,
             title: 'Electricity Rate History',
-            onTap: () {},
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
           ),
         ],
       ),
@@ -201,7 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: Symbols.key,
         title: 'Passphrase Setup',
         subtitle: 'Secure your financial vault',
-        onTap: () {},
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncSetupScreen())),
       ),
     );
   }

@@ -17,7 +17,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const TopAppBar(
-        showBackButton: false,
+        showBackButton: true, // Ensuring it has a back button since it's reachable via Settings / Dashboard
         showSync: true,
         avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCySOc1V7ArS5vpzHEpANnC1JFIK8uGmBEienAjd6YdLmwBvYXXv0d48uob5zh_fvP-MVqHgYDBqHyGJZf0nBneeCoFUbuUTZsYrHbREfAAtAXTvNbU6_DnE7TmlMgh9C8-WSmFLaBx6EAJaqzuQYxjAtVtZXXMJzwSm6A8TKRUb5R71raSE1jEKK-QiXEShdo2eqKZK4mGY1f_yLAYOh5I9HuGvwR6BPG25ucmG3ScUaQD8QSTnk9TQ5Xjc8KinHa5bsv9LSjMMU',
       ),

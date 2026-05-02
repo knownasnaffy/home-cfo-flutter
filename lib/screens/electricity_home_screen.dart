@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import 'new_reading_screen.dart';
+import 'reading_detail_screen.dart';
+import 'history_screen.dart';
 
 class ElectricityHomeScreen extends StatelessWidget {
   const ElectricityHomeScreen({super.key});
@@ -47,7 +50,7 @@ class ElectricityHomeScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppTheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.surfaceContainerHigh), // proxy for slate-100
+            border: Border.all(color: AppTheme.surfaceContainerHigh),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0A000000),
@@ -140,7 +143,7 @@ class ElectricityHomeScreen extends StatelessWidget {
                       ],
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewReadingScreen())),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryContainer,
                         foregroundColor: Colors.white,
@@ -245,7 +248,7 @@ class ElectricityHomeScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
               child: Row(
                 children: [
                   Text(
@@ -282,6 +285,7 @@ class ElectricityHomeScreen extends StatelessWidget {
                 date: 'Sep 24, 2023',
                 reading: '12,012.5 kWh',
                 delta: '+445.7',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
               _buildReadingRow(
@@ -289,6 +293,7 @@ class ElectricityHomeScreen extends StatelessWidget {
                 date: 'Aug 24, 2023',
                 reading: '11,566.8 kWh',
                 delta: '+482.3',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
               _buildReadingRow(
@@ -296,6 +301,7 @@ class ElectricityHomeScreen extends StatelessWidget {
                 date: 'Jul 24, 2023',
                 reading: '11,084.5 kWh',
                 delta: '+510.2',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
               _buildReadingRow(
@@ -303,6 +309,7 @@ class ElectricityHomeScreen extends StatelessWidget {
                 date: 'Jun 24, 2023',
                 reading: '10,574.3 kWh',
                 delta: '+398.1',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
               ),
             ],
           ),
@@ -316,11 +323,12 @@ class ElectricityHomeScreen extends StatelessWidget {
     required String date,
     required String reading,
     required String delta,
+    required VoidCallback onTap,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

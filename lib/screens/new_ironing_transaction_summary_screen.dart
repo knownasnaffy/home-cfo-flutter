@@ -385,7 +385,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () => Navigator.pop(context), // Pops back on success
             icon: const Icon(Symbols.save, color: Colors.white, fill: 1.0),
             label: const Text('Confirm Transaction'),
             style: ElevatedButton.styleFrom(
@@ -404,7 +404,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
           width: double.infinity,
           height: 56,
           child: OutlinedButton(
-            onPressed: () {},
+            onPressed: () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.onSurfaceVariant,
               side: const BorderSide(color: AppTheme.outlineVariant, width: 2),

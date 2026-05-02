@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import 'new_reading_screen.dart';
+import 'new_ironing_transaction_screen.dart';
+import 'transaction_history_screen.dart';
+import 'ironing_home_screen.dart';
+import 'electricity_home_screen.dart';
+import 'transaction_detail_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -87,6 +93,7 @@ class DashboardScreen extends StatelessWidget {
           label: 'Add Reading',
           backgroundColor: AppTheme.primary,
           foregroundColor: AppTheme.onPrimary,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewReadingScreen())),
         ),
         _buildActionCard(
           context: context,
@@ -94,6 +101,7 @@ class DashboardScreen extends StatelessWidget {
           label: 'Log Ironing',
           backgroundColor: AppTheme.secondary,
           foregroundColor: AppTheme.onSecondary,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewIroningTransactionScreen())),
         ),
         _buildActionCard(
           context: context,
@@ -102,6 +110,7 @@ class DashboardScreen extends StatelessWidget {
           backgroundColor: AppTheme.surfaceContainerLowest,
           foregroundColor: AppTheme.onSurface,
           borderColor: AppTheme.surfaceVariant,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionHistoryScreen())),
         ),
         _buildActionCard(
           context: context,
@@ -110,6 +119,7 @@ class DashboardScreen extends StatelessWidget {
           backgroundColor: AppTheme.surfaceContainerLowest,
           foregroundColor: AppTheme.onSurface,
           borderColor: AppTheme.surfaceVariant,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionHistoryScreen())),
         ),
       ],
     );
@@ -122,6 +132,7 @@ class DashboardScreen extends StatelessWidget {
     required Color backgroundColor,
     required Color foregroundColor,
     Color? borderColor,
+    required VoidCallback onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -140,7 +151,7 @@ class DashboardScreen extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () {},
+          onTap: onTap,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -162,7 +173,6 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildMainModules(BuildContext context) {
-    // In a wider screen this would be a GridView, but for mobile only it's a column or list
     return Column(
       children: [
         _buildModuleCard(
@@ -177,6 +187,7 @@ class DashboardScreen extends StatelessWidget {
           footerLabel: 'Last Transaction',
           footerValue: 'Oct 24, 2023',
           actionText: 'View',
+          onActionTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IroningHomeScreen())),
         ),
         const SizedBox(height: 24),
         _buildModuleCard(
@@ -197,6 +208,7 @@ class DashboardScreen extends StatelessWidget {
           footerLabel: 'Last Reading Date',
           footerValue: 'Nov 01, 2023',
           actionText: 'History',
+          onActionTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ElectricityHomeScreen())),
         ),
       ],
     );
@@ -223,6 +235,7 @@ class DashboardScreen extends StatelessWidget {
     required String footerLabel,
     required String footerValue,
     required String actionText,
+    required VoidCallback onActionTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -379,17 +392,20 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Text(
-                      actionText,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppTheme.secondary,
+                InkWell(
+                  onTap: onActionTap,
+                  child: Row(
+                    children: [
+                      Text(
+                        actionText,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: AppTheme.secondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Symbols.chevron_right, color: AppTheme.secondary, size: 16),
-                  ],
+                      const SizedBox(width: 4),
+                      const Icon(Symbols.chevron_right, color: AppTheme.secondary, size: 16),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -410,7 +426,7 @@ class DashboardScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionHistoryScreen())),
               child: Text(
                 'See All',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -444,6 +460,7 @@ class DashboardScreen extends StatelessWidget {
                 amount: '-\$45.00',
                 amountColor: AppTheme.error,
                 date: 'Yesterday',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceVariant),
               _buildLedgerRow(
@@ -454,6 +471,7 @@ class DashboardScreen extends StatelessWidget {
                 amount: '+\$1,200.00',
                 amountColor: AppTheme.onSecondaryContainer,
                 date: 'Oct 28',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
             ],
           ),
@@ -470,62 +488,66 @@ class DashboardScreen extends StatelessWidget {
     required String amount,
     required Color amountColor,
     required String date,
+    required VoidCallback onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: AppTheme.surfaceContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: AppTheme.outline),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppTheme.onSurface,
-                    ),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.surfaceContainer,
+                    shape: BoxShape.circle,
                   ),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                  child: Icon(icon, color: AppTheme.outline),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppTheme.onSurface,
+                      ),
                     ),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  amount,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: amountColor,
+                    fontSize: 18,
                   ),
-                ],
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                amount,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith( // numeric-md roughly matches labelLarge weight but could be custom
-                  color: amountColor,
-                  fontSize: 18,
                 ),
-              ),
-              Text(
-                date,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
+                Text(
+                  date,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import 'transaction_detail_screen.dart';
 
 class TransactionHistoryScreen extends StatelessWidget {
   const TransactionHistoryScreen({super.key});
@@ -10,7 +11,7 @@ class TransactionHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const TopAppBar(
-        showBackButton: false,
+        showBackButton: true, // Enabling back button since this is a sub-screen
         showSync: true,
         avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDf5u3VNN0yv8xr-_PlReuwgmnE6Z64DliORHb9wmu-Y5BsZyezF52rYDBNqwcacZA0JKSLsOvGHzCQjPA_ykmuBohEIToPdKTcrEGrugL0mk736dv7GQ4-F1syqj0LA5Mf0U9xAm5kRmzbmZpXenlm9-3W1EXalFL-E9l16CTge1UjV6471xoiReNvW3iDVlvO7VTsi3G6sZgJxK1XYsTa1KfCbsfLMOcsL9RC7NRtnqWFZs_L3xbG7Cf1nrf3IrkUKcY8zzFh63Y',
       ),
@@ -315,6 +316,7 @@ class TransactionHistoryScreen extends StatelessWidget {
                 amount: '-\$48.00',
                 amountColor: AppTheme.error,
                 date: 'Oct 24, 2023',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
               _buildLedgerItem(
@@ -325,6 +327,7 @@ class TransactionHistoryScreen extends StatelessWidget {
                 amount: '+\$200.00',
                 amountColor: AppTheme.secondary,
                 date: 'Oct 20, 2023',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
               _buildLedgerItem(
@@ -335,6 +338,7 @@ class TransactionHistoryScreen extends StatelessWidget {
                 amount: '-\$32.50',
                 amountColor: AppTheme.error,
                 date: 'Oct 17, 2023',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
               _buildMonthHeader(context, 'September 2023'),
               _buildLedgerItem(
@@ -345,6 +349,7 @@ class TransactionHistoryScreen extends StatelessWidget {
                 amount: '-\$54.00',
                 amountColor: AppTheme.error,
                 date: 'Sep 28, 2023',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
               ),
               const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
               Material(
@@ -396,11 +401,12 @@ class TransactionHistoryScreen extends StatelessWidget {
     required String amount,
     required Color amountColor,
     required String date,
+    required VoidCallback onTap,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Row(
@@ -525,7 +531,7 @@ class TransactionHistoryScreen extends StatelessWidget {
                       child: Text(
                         'View Full Report',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: AppTheme.secondaryFixedDim, // In design it's using the dim color on fixed background. Let's stick closer to standard contrast maybe.
+                          color: AppTheme.secondaryFixedDim,
                         ),
                       ),
                     ),

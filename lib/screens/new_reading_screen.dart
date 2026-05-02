@@ -17,7 +17,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const TopAppBar(
-        showBackButton: false,
+        showBackButton: true,
         showSync: true,
         avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAo_KDd6EaDBADJ49GQyulhz_v4dDhDr8H-eOccv8UmtjwmgXhir3Ff38gpPZb8ZnZGlcl4WIeIJFNAtCzUcqa3tumIGQseWnbZYeZenEJThnsOyzaWfbOrGVVeyo1Byv5QMJLek5WxvX6OCcHRlJXn5ecDYcw0Byw83Oeo5JUyKGXqYLLIhdGtR-zc9H-BiWet2iVgF5V75Lz0DUf8e5rFFt29H_pmzQMv9K62LFiSYsFR3z7P1OJXWPiZmynQOb8XxcjfFZ8Xx-Q',
       ),
@@ -475,7 +475,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () => Navigator.pop(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primary,
           foregroundColor: AppTheme.onPrimary,
