@@ -197,6 +197,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
                           ? const [BoxShadow(color: Color(0x0A000000), blurRadius: 2, offset: Offset(0, 1))]
                           : null,
                     ),
+                    alignment: Alignment.center,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -227,6 +228,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
                           ? const [BoxShadow(color: Color(0x0A000000), blurRadius: 2, offset: Offset(0, 1))]
                           : null,
                     ),
+                    alignment: Alignment.center,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
