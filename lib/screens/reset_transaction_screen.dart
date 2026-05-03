@@ -12,7 +12,7 @@ class ResetTransactionScreen extends StatelessWidget {
       appBar: const TopAppBar(
         showBackButton: true,
         showSync: true,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBcDKg-JdGYEI34DchY3RRmGEzck7_YlDnihi3NUsXLmYVWwab9-YO9MFFi_OW1I-u3j4okdSZ16dSD9OhgDwq3AP_5-9i5GCbazq5VOaFnFGEyLhsaoLQ8BEKO84ztFk-a4l3exxzJm32UdR8iN6Y8Sntc2BCy_ofvtBTLoPVQFvPXghgVl1nvw4zzvouyOeVdfoz5hCTaZSmXHrJQymF2y4lz7iKa4OEAqBERqlMtghp3nBxVGBIaEZAOnDYamLRPdo7ksH3H0kQ',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
         title: 'Reset Transaction',
       ),
       body: LayoutBuilder(

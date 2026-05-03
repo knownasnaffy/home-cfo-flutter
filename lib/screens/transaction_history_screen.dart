@@ -13,7 +13,7 @@ class TransactionHistoryScreen extends StatelessWidget {
       appBar: const TopAppBar(
         showBackButton: true, // Enabling back button since this is a sub-screen
         showSync: true,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDf5u3VNN0yv8xr-_PlReuwgmnE6Z64DliORHb9wmu-Y5BsZyezF52rYDBNqwcacZA0JKSLsOvGHzCQjPA_ykmuBohEIToPdKTcrEGrugL0mk736dv7GQ4-F1syqj0LA5Mf0U9xAm5kRmzbmZpXenlm9-3W1EXalFL-E9l16CTge1UjV6471xoiReNvW3iDVlvO7VTsi3G6sZgJxK1XYsTa1KfCbsfLMOcsL9RC7NRtnqWFZs_L3xbG7Cf1nrf3IrkUKcY8zzFh63Y',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),

@@ -12,7 +12,7 @@ class TransactionDetailScreen extends StatelessWidget {
       appBar: const TopAppBar(
         showBackButton: true,
         showSync: true,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAugAl94UoJM3AP5lHnS9MIFMX9o0EJr5eCc7sqXJRNHSGlAA4QMwg2exw-IHgjktDJdQTP-mS0vjpHsVmp2Mz5uZMov_aPKJ2ZCSEFO-RTGr36FHgb4M7_VOmqKUm1ZzETF4K0krWBZwDjkfGNXDBnzW0ULWg1rKQ8FVYmsdaf09Me74VdiSSvkl-Ls_4Sy22ZpViW4vY0vnZqycJi1COcQ1ddSA9_JyyxmcCCJqIXeJgyKFAlm-A7QNWtIItT8aaVXZBVKjjdZGM',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
         title: 'Transaction Details',
       ),
       body: SingleChildScrollView(

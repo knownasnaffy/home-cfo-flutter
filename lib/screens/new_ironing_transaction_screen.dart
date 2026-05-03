@@ -21,7 +21,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
         showBackButton: true,
         showSync: true,
         title: 'Home CFO',
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD8mJPtJ1C0mJurBU7XbQpk80h6A9TB-oc0zRGZhtUM94aS_R225HYwME6KIZLrgtQCaQPPebZAzg5p2ZkpjjE1y0fFTd2K9fC7meZRyfIj2btZybmQKu1xNrz_iq9nQ0plUrIr7csscsfNpqY8i544bQ9gpHFcAOQnHKOL62BoUfs7XWCFYFlZznYaSADoK4n2BtXifYTmn71Kf30mJWvN5OTTU7sl-Zl9f1YzmAXAQ46I8SvgNNWRAvgUvz5nz0SGrkSXirU0yZQ',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0),

@@ -15,7 +15,7 @@ class ElectricityHomeScreen extends StatelessWidget {
       appBar: const TopAppBar(
         showBackButton: false,
         showSync: false,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBorVayAGT-BuYHRkUdL-xQKbx-CZ6VVdBjOSX1uTpiGPFzMQcWk2Lnhw57rXiKZyc0B-5VqpdwCdPDORBJt2Km2Knu22je0bLcPEGTaUTuDwaFYL0W0JLK_WXfhzStxLllvDTy20ol5MdKrEYC48b6YPZ5DB1FbAiLYb7g80cP-Msl_X2O0PlD6H38ji0jK5KD-CsMLNkLoM2MX9uTWhMIWWxXJlju6NKPvlw34oUoIYr2TFpub_itxudnw9jieEUjfw1Q9pflpgk',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),

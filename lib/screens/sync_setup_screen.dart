@@ -21,7 +21,7 @@ class _SyncSetupScreenState extends State<SyncSetupScreen> {
         title: 'Home CFO',
         showBackButton: true,
         showSync: true,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBsrvagVHBETbvJ1M96sNOgM22u9wM2KpYEu2W5q5bjoNaJe-sb4hZT6ssKBZ-BcGtVddaz1U4elQe0mdixxBu0lkZMm_uDsGObSC8HE9iX3jQz7xJTPRFlqHJHOiSYmxAq_zFwJ9M23Uym27Tri5u2WM5o7E5D7d951ATt7cFRXlTiaODAKiquUDxSv3t3Vt4j63hZXADnLRyXkVZR8NwhUw__6d67N5sb_oNMvHd24bcE__o47zn9gd_mduZ_04YYuzNErfPr-CA',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),

@@ -21,7 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: const TopAppBar(
         showBackButton: false,
         showSync: false,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA9fCfVRezncP62QuTh871VCZJa8h3hYIVg_Wmbyh1UuvNn-vGfLzzK1M8UBhyRphhsW2xIKgNlvZBnUoi19jWOBSZBJs-Jkt1pri154udhVpnf3YqIyMUkbsCi4Z7kqeBC348xcpZeXaQk4_Iku1mzfjG4MVFjdz0CAQqQhK07WXIqGXKONHWkoAX7WYUPNBYRssxi8gPRbvkqHvdTQ-lvoeqOjv_DeR7ob6TP1t_1UpJUklxrU4drZOUBo_zWZQq7m0Ptd0ifCl0',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),

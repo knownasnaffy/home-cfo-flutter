@@ -18,7 +18,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
         showBackButton: true,
         showSync: true,
         title: 'New Ironing Transaction',
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAIUHulO74f0BxJxgNuXhsISVsTE_YY7kDDLhgEUm9V2K6iH25fD_-GF3oynuHOgiH7AeL1zn15LYHyNMHjRdqxA-7kszZ6zT67SUPjxQ9a2m4P4NWdTJ1Mi08Cvzo9DKe9n2sCuoRXmerKybGAxl9xWtMllIER1eyjNOkibZlB0GfJWwBkTIlgFiLymMpQ2e3rX6VLC-dx5KrQhclSjaSZlKuno8hN-ecnIuLTV-8bfhVPBdat3eUc-Nq8fxykXznuHSEE2LTEzGU',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),

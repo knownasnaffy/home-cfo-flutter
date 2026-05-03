@@ -17,7 +17,7 @@ class DashboardScreen extends StatelessWidget {
       appBar: const TopAppBar(
         showBackButton: false,
         showSync: false,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAUO4DaNKotXn1HH2ylb4o4Qe6-6NL0TsJwO12xAQxWZAFgpmVKMDyb10qWkoE_2jmEXPH9SoEWvOISRQzpSpEiXil3adXdnc-N-HDKPjcgSUkUd5i36EPg0lcrBa6mC_ug9fYoOh5zyjq8_5Dd-MQQmi_7T7a_ruKrYh0GUC7xG21r_JQ-v3ZEtWvo7uoLKqW46PjHsULB3A4OVyeLjtK5XfHcEmFJcNx_SntM3Fi5-SpupUg865ugMuJL1QD4Sz1bo6q-yPSfvkw',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),

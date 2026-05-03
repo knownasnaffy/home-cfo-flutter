@@ -13,7 +13,7 @@ class ReadingDetailScreen extends StatelessWidget {
       appBar: const TopAppBar(
         showBackButton: true,
         showSync: true,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBCh74b7eJgbMojTfNgDXQUPTd85YVl_ZrLPtBab2Rt1NZ8jfBWQJI8gXtwV4BBJDwnnZOm-0yjN0VVgqNBrqGexpPma6AmeDioLX4yhhU2Xzp-KFgwEJBOm7iD-hKyi7u3B7crP8lYhneFDchWDE6JEDZsP6_1hG1cwLAigiMmHIZPVT_WqEeYOg23nEMKr1S_1xwY423kDTiuvGnEmVXJkFSDNpdaZDpeujHZjxkTjZrcGx3JyLN_B2Qgqf1yNmtqISFJ7A6HerI',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
         title: 'Reading Detail',
       ),
       body: SingleChildScrollView(

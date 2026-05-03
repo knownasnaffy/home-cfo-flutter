@@ -19,7 +19,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
       appBar: const TopAppBar(
         showBackButton: true,
         showSync: true,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAo_KDd6EaDBADJ49GQyulhz_v4dDhDr8H-eOccv8UmtjwmgXhir3Ff38gpPZb8ZnZGlcl4WIeIJFNAtCzUcqa3tumIGQseWnbZYeZenEJThnsOyzaWfbOrGVVeyo1Byv5QMJLek5WxvX6OCcHRlJXn5ecDYcw0Byw83Oeo5JUyKGXqYLLIhdGtR-zc9H-BiWet2iVgF5V75Lz0DUf8e5rFFt29H_pmzQMv9K62LFiSYsFR3z7P1OJXWPiZmynQOb8XxcjfFZ8Xx-Q',
+        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
