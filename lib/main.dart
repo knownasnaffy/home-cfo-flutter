@@ -15,9 +15,10 @@ import 'screens/transaction_detail_screen.dart';
 import 'screens/new_ironing_transaction_screen.dart';
 import 'screens/new_ironing_transaction_summary_screen.dart';
 import 'screens/reset_transaction_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
-  runApp(const HomeCFOApp());
+  runApp(const ProviderScope(child: HomeCFOApp()));
 }
 
 class HomeCFOApp extends StatelessWidget {
