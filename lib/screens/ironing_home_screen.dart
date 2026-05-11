@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
@@ -7,12 +9,16 @@ import 'new_ironing_transaction_screen.dart';
 import 'reset_transaction_screen.dart';
 import 'transaction_history_screen.dart';
 import 'transaction_detail_screen.dart';
+import '../providers/app_providers.dart';
 
-class IroningHomeScreen extends StatelessWidget {
+class IroningHomeScreen extends ConsumerWidget {
   const IroningHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balanceAsync = ref.watch(ironingBalanceProvider);
+    final recentTransactionsAsync = ref.watch(recentIroningTransactionsProvider);
+
     return Scaffold(
       appBar: const TopAppBar(
         showBackButton: false,
@@ -24,11 +30,11 @@ class IroningHomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildBalanceSection(context),
+            _buildBalanceSection(context, balanceAsync),
             const SizedBox(height: 32),
             _buildQuickActionsGrid(context),
             const SizedBox(height: 32),
-            _buildRecentActivity(context),
+            _buildRecentActivity(context, recentTransactionsAsync),
             const SizedBox(height: 24),
             _buildStatsBento(context),
           ],
@@ -43,7 +49,7 @@ class IroningHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceSection(BuildContext context) {
+  Widget _buildBalanceSection(BuildContext context, AsyncValue<double> balanceAsync) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.primaryContainer,
@@ -83,19 +89,29 @@ class IroningHomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    '₹1,450.00',
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      color: Colors.white,
-                      fontSize: 40,
-                    ),
+                  balanceAsync.when(
+                    data: (balance) {
+                      final formatted = NumberFormat.simpleCurrency(name: 'INR').format(balance.abs());
+                      return Text(
+                        formatted,
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          color: Colors.white,
+                          fontSize: 40,
+                        ),
+                      );
+                    },
+                    loading: () => const CircularProgressIndicator(color: Colors.white),
+                    error: (err, stack) => Text('Error', style: Theme.of(context).textTheme.displayLarge?.copyWith(color: AppTheme.error)),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Pending',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppTheme.secondaryFixedDim,
+                  balanceAsync.maybeWhen(
+                    data: (balance) => Text(
+                      balance < 0 ? 'Owed' : (balance > 0 ? 'Credit' : 'Settled'),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppTheme.secondaryFixedDim,
+                      ),
                     ),
+                    orElse: () => const SizedBox.shrink(),
                   ),
                 ],
               ),
@@ -267,7 +283,7 @@ class IroningHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivity(BuildContext context) {
+  Widget _buildRecentActivity(BuildContext context, AsyncValue<dynamic> recentTransactionsAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -305,38 +321,38 @@ class IroningHomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              _buildActivityRow(
-                context: context,
-                icon: Symbols.local_laundry_service,
-                title: 'Regular: 15 cloths',
-                subtitle: 'Yesterday, 6:45 PM',
-                amount: '-₹150.00',
-                amountColor: AppTheme.error,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceVariant),
-              _buildActivityRow(
-                context: context,
-                icon: Symbols.payments,
-                title: 'Paid: DHBVN',
-                subtitle: '18 Oct, 11:20 AM',
-                amount: '+₹500.00',
-                amountColor: AppTheme.secondary,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceVariant),
-              _buildActivityRow(
-                context: context,
-                icon: Symbols.local_laundry_service,
-                title: 'Custom: 22 cloths',
-                subtitle: '15 Oct, 9:15 AM',
-                amount: '-₹220.00',
-                amountColor: AppTheme.error,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
-              ),
-            ],
+          child: recentTransactionsAsync.when(
+            data: (transactions) {
+              if (transactions.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No recent activity.'),
+                );
+              }
+              return Column(
+                children: transactions.map<Widget>((tx) {
+                  final amount = tx.type == 'regular' ? tx.amountPaid ?? 0.0 : tx.amount ?? 0.0;
+                  final formattedAmount = NumberFormat.simpleCurrency(name: 'INR').format(amount);
+                  final isCredit = tx.direction == 'credit' || (tx.type == 'regular' && (tx.amountPaid ?? 0) > (tx.totalDue ?? 0));
+                  return Column(
+                    children: [
+                      _buildActivityRow(
+                        context: context,
+                        icon: tx.type == 'regular' ? Symbols.local_laundry_service : Symbols.payments,
+                        title: tx.type == 'regular' ? 'Regular: ${tx.clothCount} cloths' : 'Custom Transaction',
+                        subtitle: tx.label ?? tx.date,
+                        amount: '${isCredit ? '+' : '-'}$formattedAmount',
+                        amountColor: isCredit ? AppTheme.secondary : AppTheme.error,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
+                      ),
+                      if (tx != transactions.last) const Divider(height: 1, color: AppTheme.surfaceVariant),
+                    ],
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
+            error: (err, stack) => const Padding(padding: EdgeInsets.all(16), child: Text('Error loading activity')),
           ),
         ),
       ],

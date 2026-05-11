@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
 import 'new_reading_screen.dart';
 import 'reading_detail_screen.dart';
 import 'history_screen.dart';
+import '../providers/app_providers.dart';
 
-class ElectricityHomeScreen extends StatelessWidget {
+class ElectricityHomeScreen extends ConsumerWidget {
   const ElectricityHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final readingsAsync = ref.watch(electricityReadingsProvider);
+
     return Scaffold(
       appBar: const TopAppBar(
         showBackButton: false,
@@ -26,7 +30,7 @@ class ElectricityHomeScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildAnalyticsVisual(context),
             const SizedBox(height: 24),
-            _buildPastReadingsList(context),
+            _buildPastReadingsList(context, readingsAsync),
             const SizedBox(height: 24),
             _buildStewardshipTipCard(context),
           ],
@@ -234,7 +238,7 @@ class ElectricityHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPastReadingsList(BuildContext context) {
+  Widget _buildPastReadingsList(BuildContext context, AsyncValue<dynamic> readingsAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -278,40 +282,33 @@ class ElectricityHomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              _buildReadingRow(
-                context: context,
-                date: 'Sep 24, 2023',
-                reading: '12,012.5 kWh',
-                delta: '+445.7',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
-              _buildReadingRow(
-                context: context,
-                date: 'Aug 24, 2023',
-                reading: '11,566.8 kWh',
-                delta: '+482.3',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
-              _buildReadingRow(
-                context: context,
-                date: 'Jul 24, 2023',
-                reading: '11,084.5 kWh',
-                delta: '+510.2',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
-              _buildReadingRow(
-                context: context,
-                date: 'Jun 24, 2023',
-                reading: '10,574.3 kWh',
-                delta: '+398.1',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
-              ),
-            ],
+          child: readingsAsync.when(
+            data: (readings) {
+              if (readings.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No past readings.'),
+                );
+              }
+              return Column(
+                children: readings.map<Widget>((r) {
+                  return Column(
+                    children: [
+                      _buildReadingRow(
+                        context: context,
+                        date: r.readingDate,
+                        reading: '${r.meterValue} kWh',
+                        delta: '...', // We would calculate delta by calling getConsumptionForReading ideally, but we will leave this as placeholder if needed or calculate.
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
+                      ),
+                      if (r != readings.last) const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
+                    ],
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
+            error: (err, stack) => const Padding(padding: EdgeInsets.all(16), child: Text('Error loading readings')),
           ),
         ),
       ],

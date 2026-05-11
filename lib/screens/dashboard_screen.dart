@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
@@ -7,12 +9,16 @@ import 'new_ironing_transaction_screen.dart';
 import 'transaction_history_screen.dart';
 import 'ironing_home_screen.dart';
 import 'electricity_home_screen.dart';
+import '../providers/app_providers.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balanceAsync = ref.watch(ironingBalanceProvider);
+    final recentTransactionsAsync = ref.watch(recentIroningTransactionsProvider);
+
     return Scaffold(
       appBar: const TopAppBar(
         showBackButton: false,
@@ -24,20 +30,20 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(context),
+            _buildHeader(context, balanceAsync),
             const SizedBox(height: 32),
             _buildQuickActions(context),
             const SizedBox(height: 32),
-            _buildMainModules(context),
+            _buildMainModules(context, balanceAsync),
             const SizedBox(height: 32),
-            _buildRecentLedger(context),
+            _buildRecentLedger(context, recentTransactionsAsync),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AsyncValue<double> balanceAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -52,11 +58,18 @@ class DashboardScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Text(
-              '\$2,415.50',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                color: AppTheme.primary,
-              ),
+            balanceAsync.when(
+              data: (balance) {
+                final formatted = NumberFormat.simpleCurrency(name: 'INR').format(balance);
+                return Text(
+                  formatted,
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    color: AppTheme.primary,
+                  ),
+                );
+              },
+              loading: () => const CircularProgressIndicator(),
+              error: (err, stack) => Text('Error', style: Theme.of(context).textTheme.displayLarge?.copyWith(color: AppTheme.error)),
             ),
             const SizedBox(width: 8),
             Container(
@@ -172,7 +185,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMainModules(BuildContext context) {
+  Widget _buildMainModules(BuildContext context, AsyncValue<double> balanceAsync) {
+    final balanceStr = balanceAsync.maybeWhen(
+      data: (balance) => NumberFormat.simpleCurrency(name: 'INR').format(balance),
+      orElse: () => '...',
+    );
+
     return Column(
       children: [
         _buildModuleCard(
@@ -182,7 +200,7 @@ class DashboardScreen extends StatelessWidget {
           iconColor: AppTheme.onSecondaryContainer,
           title: 'Ironing Service',
           valueLabel: 'Current Balance',
-          value: '-\$540.00',
+          value: balanceStr,
           valueColor: AppTheme.error,
           footerLabel: 'Last Transaction',
           footerValue: 'Oct 24, 2023',
@@ -415,7 +433,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentLedger(BuildContext context) {
+  Widget _buildRecentLedger(BuildContext context, AsyncValue<dynamic> recentTransactionsAsync) {
     return Column(
       children: [
         Row(
@@ -450,28 +468,38 @@ class DashboardScreen extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              _buildLedgerRow(
-                context: context,
-                icon: Symbols.local_laundry_service,
-                title: 'Weekly Ironing Service',
-                subtitle: 'Service Fee',
-                amount: '-\$45.00',
-                amountColor: AppTheme.error,
-                date: 'Yesterday',
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceVariant),
-              _buildLedgerRow(
-                context: context,
-                icon: Symbols.receipt,
-                title: 'Monthly Settlement',
-                subtitle: 'Bank Transfer',
-                amount: '+\$1,200.00',
-                amountColor: AppTheme.onSecondaryContainer,
-                date: 'Oct 28',
-              ),
-            ],
+          child: recentTransactionsAsync.when(
+            data: (transactions) {
+              if (transactions.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('No recent transactions.'),
+                );
+              }
+              return Column(
+                children: transactions.map<Widget>((tx) {
+                  final amount = tx.type == 'regular' ? tx.amountPaid ?? 0.0 : tx.amount ?? 0.0;
+                  final formattedAmount = NumberFormat.simpleCurrency(name: 'INR').format(amount);
+                  final isCredit = tx.direction == 'credit' || (tx.type == 'regular' && (tx.amountPaid ?? 0) > (tx.totalDue ?? 0));
+                  return Column(
+                    children: [
+                      _buildLedgerRow(
+                        context: context,
+                        icon: tx.type == 'regular' ? Symbols.local_laundry_service : Symbols.payments,
+                        title: tx.type == 'regular' ? 'Regular Service' : 'Custom Transaction',
+                        subtitle: tx.label ?? tx.type,
+                        amount: '${isCredit ? '+' : '-'}$formattedAmount',
+                        amountColor: isCredit ? AppTheme.onSecondaryContainer : AppTheme.error,
+                        date: tx.date,
+                      ),
+                      if (tx != transactions.last) const Divider(height: 1, color: AppTheme.surfaceVariant),
+                    ],
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
+            error: (err, stack) => Padding(padding: const EdgeInsets.all(16), child: Text('Error loading transactions')),
           ),
         ),
       ],

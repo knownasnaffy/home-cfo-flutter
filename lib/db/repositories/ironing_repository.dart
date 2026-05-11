@@ -20,9 +20,27 @@ class IroningRepository {
   }
 
   Future<void> addTransaction(IroningTransactionsCompanion transaction) async {
-    final balanceBefore = await getCurrentBalance();
+    if (!transaction.type.present) {
+      throw ArgumentError('Transaction type is required.');
+    }
 
     final String type = transaction.type.value;
+    if (type != 'regular' && type != 'reset' && type != 'custom') {
+      throw ArgumentError('Invalid transaction type: $type');
+    }
+
+    if (type == 'custom') {
+      if (!transaction.direction.present) {
+        throw ArgumentError('Direction is required for custom transactions.');
+      }
+      final direction = transaction.direction.value;
+      if (direction != 'credit' && direction != 'debit') {
+        throw ArgumentError('Invalid direction for custom transaction: $direction');
+      }
+    }
+
+    final balanceBefore = await getCurrentBalance();
+
     double balanceAfter = balanceBefore;
 
     if (type == 'regular') {

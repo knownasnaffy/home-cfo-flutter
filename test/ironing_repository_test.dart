@@ -106,5 +106,45 @@ void main() {
       currentBalance = await repo.getCurrentBalance();
       expect(currentBalance, 70.0);
     });
+
+    test('addTransaction: validates transaction type is present', () async {
+      expect(
+        () => repo.addTransaction(const IroningTransactionsCompanion(
+          date: Value('2023-01-01'),
+        )),
+        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', 'Transaction type is required.')),
+      );
+    });
+
+    test('addTransaction: validates transaction type value', () async {
+      expect(
+        () => repo.addTransaction(const IroningTransactionsCompanion(
+          type: Value('invalid_type'),
+          date: Value('2023-01-01'),
+        )),
+        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', 'Invalid transaction type: invalid_type')),
+      );
+    });
+
+    test('addTransaction: validates direction is present for custom transaction', () async {
+      expect(
+        () => repo.addTransaction(const IroningTransactionsCompanion(
+          type: Value('custom'),
+          date: Value('2023-01-01'),
+        )),
+        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', 'Direction is required for custom transactions.')),
+      );
+    });
+
+    test('addTransaction: validates direction value for custom transaction', () async {
+      expect(
+        () => repo.addTransaction(const IroningTransactionsCompanion(
+          type: Value('custom'),
+          date: Value('2023-01-01'),
+          direction: Value('invalid_direction'),
+        )),
+        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', 'Invalid direction for custom transaction: invalid_direction')),
+      );
+    });
   });
 }
