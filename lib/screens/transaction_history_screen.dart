@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/app_providers.dart';
+import '../db/database.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
 import 'transaction_detail_screen.dart';
+import 'package:intl/intl.dart';
+import '../utils/currency_formatter.dart';
 
-class TransactionHistoryScreen extends StatelessWidget {
+class TransactionHistoryScreen extends ConsumerWidget {
   const TransactionHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final transactionsAsync = ref.watch(allIroningTransactionsProvider);
     return Scaffold(
       appBar: const TopAppBar(
         showBackButton: true, // Enabling back button since this is a sub-screen
@@ -24,7 +30,7 @@ class TransactionHistoryScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildStatsBentoGrid(context),
             const SizedBox(height: 32),
-            _buildTransactionLedger(context),
+            _buildTransactionLedger(context, transactionsAsync),
             const SizedBox(height: 32),
             _buildInsightsCards(context),
           ],
@@ -131,7 +137,7 @@ class TransactionHistoryScreen extends StatelessWidget {
               child: _buildStatCard(
                 context: context,
                 label: 'Monthly Spend',
-                value: '\$284.50',
+                value: '₹284',
                 subLabel: '12% vs last month',
                 subIcon: Symbols.trending_down,
                 subIconColor: AppTheme.secondary,
@@ -208,7 +214,7 @@ class TransactionHistoryScreen extends StatelessWidget {
               child: _buildStatCard(
                 context: context,
                 label: 'Balance Status',
-                value: '\$1,420.00',
+                value: '₹1,420',
                 subLabel: 'Operational Reserve',
               ),
             ),
@@ -278,7 +284,7 @@ class TransactionHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionLedger(BuildContext context) {
+  Widget _buildTransactionLedger(BuildContext context, AsyncValue<List<IroningTransaction>> transactionsAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,71 +314,93 @@ class TransactionHistoryScreen extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              _buildMonthHeader(context, 'October 2023'),
-              _buildLedgerItem(
-                context: context,
-                icon: Symbols.iron,
-                title: 'Standard Ironing Service',
-                subtitle: '24 Items • Formal Wear',
-                amount: '-\$48.00',
-                amountColor: AppTheme.error,
-                date: 'Oct 24, 2023',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
-              _buildLedgerItem(
-                context: context,
-                icon: Symbols.account_balance_wallet,
-                title: 'Account Top-up',
-                subtitle: 'Bank Transfer • Ref: HD821',
-                amount: '+\$200.00',
-                amountColor: AppTheme.secondary,
-                date: 'Oct 20, 2023',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
-              _buildLedgerItem(
-                context: context,
-                icon: Symbols.iron,
-                title: 'Express Ironing Service',
-                subtitle: '12 Items • Bed Linen',
-                amount: '-\$32.50',
-                amountColor: AppTheme.error,
-                date: 'Oct 17, 2023',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
-              ),
-              _buildMonthHeader(context, 'September 2023'),
-              _buildLedgerItem(
-                context: context,
-                icon: Symbols.iron,
-                title: 'Standard Ironing Service',
-                subtitle: '30 Items • Mixed Load',
-                amount: '-\$54.00',
-                amountColor: AppTheme.error,
-                date: 'Sep 28, 2023',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
-              ),
-              const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {},
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Load Older Transactions',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppTheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          child: transactionsAsync.when(
+            data: (transactions) {
+              if (transactions.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: Text('No transactions found.'),
+                );
+              }
+
+              final groupedTransactions = <String, List<IroningTransaction>>{};
+              for (var tx in transactions) {
+                try {
+                  final date = DateTime.parse(tx.date);
+                  final monthYear = DateFormat('MMMM yyyy').format(date);
+                  groupedTransactions.putIfAbsent(monthYear, () => []).add(tx);
+                } catch (e) {
+                  groupedTransactions.putIfAbsent('Unknown Date', () => []).add(tx);
+                }
+              }
+
+              final widgets = <Widget>[];
+
+              for (var month in groupedTransactions.keys) {
+                widgets.add(_buildMonthHeader(context, month));
+                final monthTransactions = groupedTransactions[month]!;
+                for (int i = 0; i < monthTransactions.length; i++) {
+                  final tx = monthTransactions[i];
+                  final amount = tx.type == 'regular' ? tx.amountPaid ?? 0.0 : tx.amount ?? 0.0;
+                  final isCredit = tx.direction == 'credit' || (tx.type == 'regular' && (tx.amountPaid ?? 0) > (tx.totalDue ?? 0));
+                  final formattedAmount = formatCurrency(amount);
+                  final amountString = '${isCredit ? '+' : '-'}$formattedAmount';
+                  final amountColor = isCredit ? AppTheme.secondary : AppTheme.error;
+
+                  IconData icon;
+                  String title;
+                  String subtitle;
+
+                  if (tx.type == 'regular') {
+                    icon = Symbols.iron;
+                    title = 'Standard Ironing Service';
+                    subtitle = '${tx.clothCount} Items';
+                  } else if (tx.type == 'custom') {
+                     icon = Symbols.payments;
+                     title = 'Custom Transaction';
+                     subtitle = tx.label ?? 'Other';
+                  } else if (tx.type == 'reset') {
+                     icon = Symbols.restart_alt;
+                     title = 'Balance Reset';
+                     subtitle = 'Account adjustment';
+                  } else {
+                     icon = Symbols.receipt_long;
+                     title = 'Transaction';
+                     subtitle = '';
+                  }
+
+                  String dateStr = tx.date;
+                  try {
+                    dateStr = DateFormat('MMM d, yyyy').format(DateTime.parse(tx.date));
+                  } catch (e) {}
+
+                  widgets.add(_buildLedgerItem(
+                    context: context,
+                    icon: icon,
+                    title: title,
+                    subtitle: subtitle,
+                    amount: amountString,
+                    amountColor: amountColor,
+                    date: dateStr,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionDetailScreen(transaction: tx))),
+                  ));
+
+                  if (i < monthTransactions.length - 1) {
+                    widgets.add(const Divider(height: 1, color: AppTheme.surfaceContainerHigh));
+                  }
+                }
+              }
+
+              return Column(children: widgets);
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, stack) => Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text('Error: $err'),
+            ),
           ),
         ),
       ],

@@ -156,7 +156,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  '\$1.50',
+                                  '₹1.50',
                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: AppTheme.primary,
                                     fontWeight: FontWeight.w600,
@@ -227,7 +227,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                     prefixIcon: Padding(
                       padding: const EdgeInsets.only(left: 16, right: 8),
                       child: Text(
-                        '\$',
+                        '₹',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: AppTheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
@@ -308,9 +308,9 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
             ),
           ),
           const SizedBox(height: 16),
-          _buildSummaryRow(context, 'Subtotal (12 items × \$1.50)', '\$18.00'),
+          _buildSummaryRow(context, 'Subtotal (12 items × ₹1.50)', '₹18'),
           const SizedBox(height: 8),
-          _buildSummaryRow(context, 'Express Fee (None)', '\$0.00'),
+          _buildSummaryRow(context, 'Express Fee (None)', '₹0'),
           const SizedBox(height: 16),
           Divider(height: 1, color: AppTheme.onTertiaryContainer.withValues(alpha: 0.2)),
           const SizedBox(height: 16),
@@ -324,7 +324,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                 ),
               ),
               Text(
-                '\$18.00',
+                '₹18',
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: Colors.white,
                   fontSize: 28,
@@ -343,7 +343,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                 ),
               ),
               Text(
-                '+\$2.00',
+                '+₹2',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppTheme.secondaryContainer,
                   fontWeight: FontWeight.w600,

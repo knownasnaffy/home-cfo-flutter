@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import '../utils/currency_formatter.dart';
+import 'transaction_detail_screen.dart';
+import '../db/database.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
@@ -60,7 +62,7 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             balanceAsync.when(
               data: (balance) {
-                final formatted = NumberFormat.simpleCurrency(name: 'INR').format(balance);
+                final formatted = formatCurrency(balance);
                 return Text(
                   formatted,
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
@@ -187,7 +189,7 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildMainModules(BuildContext context, AsyncValue<double> balanceAsync) {
     final balanceStr = balanceAsync.maybeWhen(
-      data: (balance) => NumberFormat.simpleCurrency(name: 'INR').format(balance),
+      data: (balance) => formatCurrency(balance),
       orElse: () => '...',
     );
 
@@ -479,11 +481,12 @@ class DashboardScreen extends ConsumerWidget {
               return Column(
                 children: transactions.map<Widget>((tx) {
                   final amount = tx.type == 'regular' ? tx.amountPaid ?? 0.0 : tx.amount ?? 0.0;
-                  final formattedAmount = NumberFormat.simpleCurrency(name: 'INR').format(amount);
+                  final formattedAmount = formatCurrency(amount);
                   final isCredit = tx.direction == 'credit' || (tx.type == 'regular' && (tx.amountPaid ?? 0) > (tx.totalDue ?? 0));
                   return Column(
                     children: [
                       _buildLedgerRow(
+                        tx: tx,
                         context: context,
                         icon: tx.type == 'regular' ? Symbols.local_laundry_service : Symbols.payments,
                         title: tx.type == 'regular' ? 'Regular Service' : 'Custom Transaction',
@@ -507,6 +510,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildLedgerRow({
+    required IroningTransaction tx,
     required BuildContext context,
     required IconData icon,
     required String title,
@@ -515,7 +519,9 @@ class DashboardScreen extends ConsumerWidget {
     required Color amountColor,
     required String date,
   }) {
-    return Padding(
+    return InkWell(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionDetailScreen(transaction: tx))),
+      child: Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -570,6 +576,7 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
