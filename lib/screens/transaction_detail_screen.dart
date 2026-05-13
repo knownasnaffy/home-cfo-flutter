@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import '../utils/currency_formatter.dart';
 
 import '../db/database.dart';
 
@@ -12,29 +14,48 @@ class TransactionDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (transaction == null) {
+      return const Scaffold(
+        appBar: TopAppBar(
+          showBackButton: true,
+          showSync: true,
+          title: 'Transaction Details',
+        ),
+        body: Center(child: Text('Transaction not found')),
+      );
+    }
+
     return Scaffold(
       appBar: const TopAppBar(
         showBackButton: true,
         showSync: true,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
         title: 'Transaction Details',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
         child: Column(
           children: [
-            _buildHeroStatusCard(context),
+            _buildHeroStatusCard(context, transaction!),
             const SizedBox(height: 16),
-            _buildBentoGrid(context),
+            _buildBentoGrid(context, transaction!),
             const SizedBox(height: 24),
-            _buildFooterActions(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeroStatusCard(BuildContext context) {
+  Widget _buildHeroStatusCard(BuildContext context, IroningTransaction tx) {
+    final amount = tx.type == 'regular'
+        ? tx.amountPaid ?? 0.0
+        : tx.amount ?? 0.0;
+    final isCredit =
+        tx.direction == 'credit' ||
+        (tx.type == 'regular' && (tx.amountPaid ?? 0) > (tx.totalDue ?? 0));
+    final formattedAmount = formatCurrency(amount);
+    final amountString = '${isCredit ? '+' : '-'}$formattedAmount';
+    final amountColor = isCredit ? AppTheme.secondary : AppTheme.error;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -43,7 +64,7 @@ class TransactionDetailScreen extends StatelessWidget {
         border: Border.all(color: AppTheme.surfaceVariant),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000), // shadow-[0_8px_24px_-10px_rgba(0,0,0,0.08)] equivalent
+            color: Color(0x14000000),
             blurRadius: 24,
             spreadRadius: -10,
             offset: Offset(0, 8),
@@ -71,16 +92,16 @@ class TransactionDetailScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Total Amount',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppTheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: AppTheme.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
-            '-\$45.00',
-            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-              color: AppTheme.primary,
-            ),
+            amountString,
+            style: Theme.of(
+              context,
+            ).textTheme.displayLarge?.copyWith(color: amountColor),
           ),
           const SizedBox(height: 16),
           Container(
@@ -90,10 +111,10 @@ class TransactionDetailScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(9999),
             ),
             child: Text(
-              'ID: TXN-9921-XF8',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppTheme.onSurface,
-              ),
+              'ID: ${tx.id.substring(0, 8).toUpperCase()}',
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: AppTheme.onSurface),
             ),
           ),
         ],
@@ -101,21 +122,32 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBentoGrid(BuildContext context) {
+  Widget _buildBentoGrid(BuildContext context, IroningTransaction tx) {
     return Column(
       children: [
-        _buildInfoCard(context),
+        _buildInfoCard(context, tx),
         const SizedBox(height: 16),
-        _buildImpactCard(context),
+        _buildImpactCard(context, tx),
         const SizedBox(height: 16),
-        _buildCategoryCard(context),
-        const SizedBox(height: 16),
-        _buildReceiptCard(context),
+        _buildCategoryCard(context, tx),
       ],
     );
   }
 
-  Widget _buildInfoCard(BuildContext context) {
+  Widget _buildInfoCard(BuildContext context, IroningTransaction tx) {
+    String formattedDate = 'Unknown Date';
+    String formattedTime = 'Unknown Time';
+
+    try {
+      final date = DateTime.parse(tx.date);
+      formattedDate = DateFormat.yMMMMd().format(date);
+    } catch (_) {}
+
+    try {
+      final createdDate = DateTime.parse(tx.createdAt).toLocal();
+      formattedTime = DateFormat.jm().format(createdDate);
+    } catch (_) {}
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -136,13 +168,17 @@ class TransactionDetailScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Symbols.calendar_today, color: AppTheme.onPrimaryContainer, size: 20),
+              const Icon(
+                Symbols.calendar_today,
+                color: AppTheme.onPrimaryContainer,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Time & Date',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppTheme.onSurface,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: AppTheme.onSurface),
               ),
             ],
           ),
@@ -157,10 +193,10 @@ class TransactionDetailScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                'October 24, 2023 • 14:32 PM',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                '$formattedDate • $formattedTime',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -175,10 +211,12 @@ class TransactionDetailScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                'October 2023 Stewardship',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                DateFormat(
+                  'MMMM yyyy',
+                ).format(DateTime.tryParse(tx.date) ?? DateTime.now()),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -187,7 +225,7 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildImpactCard(BuildContext context) {
+  Widget _buildImpactCard(BuildContext context, IroningTransaction tx) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -208,13 +246,17 @@ class TransactionDetailScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Symbols.account_balance_wallet, color: AppTheme.onPrimaryContainer, size: 20),
+              const Icon(
+                Symbols.account_balance_wallet,
+                color: AppTheme.onPrimaryContainer,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Financial Impact',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppTheme.onSurface,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: AppTheme.onSurface),
               ),
             ],
           ),
@@ -230,9 +272,9 @@ class TransactionDetailScreen extends StatelessWidget {
               ),
               Text(
                 'Primary Domestic Ledger',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -251,30 +293,13 @@ class TransactionDetailScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '\$12,450.80',
+                    formatCurrency(tx.balanceAfter.abs()),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppTheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.errorContainer,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  '-0.36% CHANGE',
-                  style: TextStyle(
-                    fontFamily: 'Public Sans',
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                    color: AppTheme.onErrorContainer,
-                  ),
-                ),
               ),
             ],
           ),
@@ -283,7 +308,27 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryCard(BuildContext context) {
+  Widget _buildCategoryCard(BuildContext context, IroningTransaction tx) {
+    String categoryName = 'REGULAR SERVICE';
+    String title = 'Professional Ironing & Pressing';
+    String description =
+        'Weekly maintenance of formal attire and domestic linens';
+    IconData icon = Symbols.iron;
+
+    if (tx.type == 'custom') {
+      categoryName = 'CUSTOM TRANSACTION';
+      title = tx.label ?? 'Custom Entry';
+      description = tx.direction == 'credit'
+          ? 'Credited to account'
+          : 'Debited from account';
+      icon = Symbols.payments;
+    } else if (tx.type == 'reset') {
+      categoryName = 'BALANCE RESET';
+      title = 'Manual Balance Adjustment';
+      description = tx.reason ?? 'Account balance was reset to zero';
+      icon = Symbols.restart_alt;
+    }
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -307,25 +352,32 @@ class TransactionDetailScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Symbols.label, color: AppTheme.onPrimaryContainer, size: 20),
+                  const Icon(
+                    Symbols.label,
+                    color: AppTheme.onPrimaryContainer,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Categorization',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppTheme.onSurface,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelLarge?.copyWith(color: AppTheme.onSurface),
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.tertiaryFixed,
                   borderRadius: BorderRadius.circular(9999),
                 ),
-                child: const Text(
-                  'HOUSEHOLD SERVICES',
-                  style: TextStyle(
+                child: Text(
+                  categoryName,
+                  style: const TextStyle(
                     fontFamily: 'Public Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -344,7 +396,7 @@ class TransactionDetailScreen extends StatelessWidget {
                   color: AppTheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Symbols.iron, color: AppTheme.onSurface),
+                child: Icon(icon, color: AppTheme.onSurface),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -352,14 +404,14 @@ class TransactionDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Professional Ironing & Pressing',
+                      title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.onSurface,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      'Weekly maintenance of formal attire and domestic linens',
+                      description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.onSurfaceVariant,
                       ),
@@ -369,152 +421,52 @@ class TransactionDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReceiptCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.surfaceVariant),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+          if (tx.type == 'regular') ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: AppTheme.surfaceVariant),
+            const SizedBox(height: 16),
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Supporting Documents',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppTheme.onSurface,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 0),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Symbols.download, size: 14, color: AppTheme.secondary),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Save PDF',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppTheme.secondary,
-                        ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Items Processed',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.onSurfaceVariant,
                       ),
-                    ],
-                  ),
+                    ),
+                    Text(
+                      '${tx.clothCount ?? 0} pieces',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Rate Applied',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      '${formatCurrency(tx.priceSnapshot ?? 0)}/pc',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          const Divider(height: 1, color: AppTheme.surfaceVariant),
-          Container(
-            height: 192,
-            color: AppTheme.surfaceContainerHigh,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network(
-                  'https://lh3.googleusercontent.com/aida-public/AB6AXuCvK6EFo2beBQ48Tp9diTbiexzItbqkGW9rB8pWez5j4NL-8AI19gjWY1lUqmg8KJISsKX1TQIru-L3b1KhVsssQ0k0ksjkkxuoxq_vOnKRiIS5VpKedXQRzVzYr47Dj8IYsnI7zlqtytzC-QI9NFPPCn3pSA95pgewisK63r3iuRaUjGpD2jUVNcPosnNWhwTSP6gJS30qqCMwskgbC_T5dOvjeaJDHAr5rBymrWuWt3fq5LMLbwvzp4ng9PPShDnLHGer1_yQT2U',
-                  fit: BoxFit.cover,
-                  color: Colors.white.withValues(alpha: 0.6), // roughly grayscale + opacity effect
-                  colorBlendMode: BlendMode.modulate,
-                ),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(9999),
-                      border: Border.all(color: AppTheme.outlineVariant),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x1A000000),
-                          blurRadius: 16,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Symbols.visibility, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'View Scanned Receipt',
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          ],
         ],
       ),
-    );
-  }
-
-  Widget _buildFooterActions(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Symbols.edit, color: AppTheme.onPrimary),
-            label: const Text('Modify Transaction Record'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
-              foregroundColor: AppTheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              textStyle: Theme.of(context).textTheme.labelLarge,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Symbols.flag, color: AppTheme.onSurface),
-            label: const Text('Flag for Verification'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.onSurface,
-              side: const BorderSide(color: AppTheme.outline),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              textStyle: Theme.of(context).textTheme.labelLarge,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
