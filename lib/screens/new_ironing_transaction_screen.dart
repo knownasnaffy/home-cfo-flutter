@@ -139,7 +139,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
             prefixIcon: Padding(
               padding: const EdgeInsets.only(left: 16, right: 8),
               child: Text(
-                '\$',
+                '₹',
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: AppTheme.outline,
                   fontSize: 32,

@@ -3,8 +3,12 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
 
+import '../db/database.dart';
+
 class TransactionDetailScreen extends StatelessWidget {
-  const TransactionDetailScreen({super.key});
+  final IroningTransaction? transaction;
+
+  const TransactionDetailScreen({super.key, this.transaction});
 
   @override
   Widget build(BuildContext context) {

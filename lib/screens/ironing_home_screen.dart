@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import '../utils/currency_formatter.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
@@ -91,7 +91,7 @@ class IroningHomeScreen extends ConsumerWidget {
                 children: [
                   balanceAsync.when(
                     data: (balance) {
-                      final formatted = NumberFormat.simpleCurrency(name: 'INR').format(balance.abs());
+                      final formatted = formatCurrency(balance.abs());
                       return Text(
                         formatted,
                         style: Theme.of(context).textTheme.displayLarge?.copyWith(
@@ -332,7 +332,7 @@ class IroningHomeScreen extends ConsumerWidget {
               return Column(
                 children: transactions.map<Widget>((tx) {
                   final amount = tx.type == 'regular' ? tx.amountPaid ?? 0.0 : tx.amount ?? 0.0;
-                  final formattedAmount = NumberFormat.simpleCurrency(name: 'INR').format(amount);
+                  final formattedAmount = formatCurrency(amount);
                   final isCredit = tx.direction == 'credit' || (tx.type == 'regular' && (tx.amountPaid ?? 0) > (tx.totalDue ?? 0));
                   return Column(
                     children: [
@@ -343,7 +343,7 @@ class IroningHomeScreen extends ConsumerWidget {
                         subtitle: tx.label ?? tx.date,
                         amount: '${isCredit ? '+' : '-'}$formattedAmount',
                         amountColor: isCredit ? AppTheme.secondary : AppTheme.error,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionDetailScreen())),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionDetailScreen(transaction: tx))),
                       ),
                       if (tx != transactions.last) const Divider(height: 1, color: AppTheme.surfaceVariant),
                     ],

@@ -72,7 +72,7 @@ class ResetTransactionScreen extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '\$',
+                '₹',
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: AppTheme.onSurface,
                   fontSize: 28,
@@ -224,7 +224,7 @@ class ResetTransactionScreen extends StatelessWidget {
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             TextSpan(
-                              text: 'This action will permanently clear the balance to \$0.00. This cannot be undone.',
+                              text: 'This action will permanently clear the balance to ₹0. This cannot be undone.',
                             ),
                           ],
                         ),
