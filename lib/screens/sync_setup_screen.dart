@@ -1,18 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import '../providers/app_providers.dart';
 
-class SyncSetupScreen extends StatefulWidget {
+class SyncSetupScreen extends ConsumerStatefulWidget {
   const SyncSetupScreen({super.key});
 
   @override
-  State<SyncSetupScreen> createState() => _SyncSetupScreenState();
+  ConsumerState<SyncSetupScreen> createState() => _SyncSetupScreenState();
 }
 
-class _SyncSetupScreenState extends State<SyncSetupScreen> {
+class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
   bool _syncEnabled = true;
   bool _obscurePassphrase = true;
+  final TextEditingController _passphraseController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSyncPreference();
+  }
+
+  Future<void> _loadSyncPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _syncEnabled = prefs.getBool('syncEnabled') ?? true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _passphraseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +161,7 @@ class _SyncSetupScreenState extends State<SyncSetupScreen> {
           ),
           const SizedBox(height: 16),
           TextFormField(
-            initialValue: '••••••••••••••••',
+            controller: _passphraseController,
             obscureText: _obscurePassphrase,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppTheme.onBackground,
@@ -238,19 +264,32 @@ class _SyncSetupScreenState extends State<SyncSetupScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Oct 24, 14:32',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith( // roughly matches numeric-md logic for here
-                color: AppTheme.onBackground,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '2 minutes ago',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.onSurfaceVariant,
-              ),
+            Consumer(
+              builder: (context, ref, _) {
+                final lastSyncedAsync = ref.watch(lastSyncedAtProvider);
+                final lastSyncedStr = lastSyncedAsync.value != null
+                    ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSyncedAsync.value!).toLocal())
+                    : 'Never synced';
+                return Column(
+                  children: [
+                    Text(
+                      lastSyncedStr,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.onBackground,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (lastSyncedAsync.value != null)
+                      Text(
+                        'Recent', // Placeholder for time ago logic if needed
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                );
+              }
             ),
           ],
         ),
@@ -347,7 +386,26 @@ class _SyncSetupScreenState extends State<SyncSetupScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () async {
+               final prefs = await SharedPreferences.getInstance();
+               await prefs.setBool('syncEnabled', _syncEnabled);
+
+               if (_syncEnabled && _passphraseController.text.isNotEmpty) {
+                  // Simulate PBKDF2 hash using sha256 for mock simplicity
+                  final bytes = utf8.encode(_passphraseController.text);
+                  final digest = sha256.convert(bytes);
+                  await prefs.setString('syncKeyHash', digest.toString());
+
+                  // In a real app we would call full sync here.
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferences saved. Triggering initial full sync.')));
+               } else if (!_syncEnabled) {
+                  await prefs.remove('syncKeyHash');
+               }
+
+               if (context.mounted) {
+                  Navigator.pop(context);
+               }
+            },
             icon: const Icon(Symbols.save, color: Colors.white),
             label: const Text('Save Sync Preferences'),
             style: ElevatedButton.styleFrom(
@@ -365,7 +423,9 @@ class _SyncSetupScreenState extends State<SyncSetupScreen> {
           width: double.infinity,
           height: 56,
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sync logs screen coming soon!')));
+            },
             icon: const Icon(Symbols.history, color: AppTheme.onBackground),
             label: const Text('View Sync Logs'),
             style: OutlinedButton.styleFrom(
