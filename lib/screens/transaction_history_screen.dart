@@ -19,7 +19,7 @@ class TransactionHistoryScreen extends ConsumerWidget {
       appBar: const TopAppBar(
         showBackButton: true, // Enabling back button since this is a sub-screen
         showSync: true,
-        avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB8lfb-7Rg1ilD4gul0KAQCdgilkIpzQw2y_pEc7xVp2ch4oGhZWET7kTfXj4KF7IyYus4DhhEh_RDGWo_-Ea0dkcgagtehsBhFf-McCNzGuxhh_rBTS0F9ise5AghqbJdY2SbsO-WeGhejqq5KM3iSWJNrLzKDjlDmJu4KJxajdnyU9YSRgUa66Xmri9UOzxwVDKs51rPXnmn1L7K9JHtDYF_DNJNjB7Mip3mEKjvquZv3FBVejDMftAiXCExVRqe2c1DOZCCK9Uk',
+        avatarUrl: '',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
@@ -527,10 +527,7 @@ class TransactionHistoryScreen extends ConsumerWidget {
                 height: 160,
                 decoration: const BoxDecoration(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                  image: DecorationImage(
-                    image: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuCS1X8q6zwj_dOYssplVNki2YrZROge5M9JyfKGOHRHNs9nC-B1XodvSMD9P3hhbDFYmUldzRoVTETqEQZDV73335JyCJ-8ODYeGUBJcfqUgCdwzy1IA-zFAjIAFXgvji9L_2JNauR-QL3Qjh7tp_aF3PDkBVuEKyXxZ2Hl6XuX9z3FVnLPkDaDP-IQdlR8-mhJp6NdHmuKrdRtpHcvstaNWENyiyHz8d28Y8qlt4T0KbchAFB3_obbYFj_n_amzK1sy39HCPMSnMM'),
-                    fit: BoxFit.cover,
-                  ),
+
                 ),
               ),
               Padding(

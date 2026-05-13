@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart' hide isNull, isNotNull;
-import 'package:matcher/src/core_matchers.dart' as matcher;
+import 'package:flutter_test/flutter_test.dart' as flutter_test;
+// The hide doesn't hide everything easily sometimes, but we can prefix flutter_test
 import 'package:home_cfo/db/database.dart';
 import 'package:home_cfo/db/repositories/electricity_repository.dart';
 
@@ -10,7 +11,7 @@ void main() {
   late ElectricityRepository repo;
 
   setUp(() {
-    db = AppDatabase.forTesting(DatabaseConnection(NativeDatabase.memory()));
+    db = AppDatabase.forTesting(NativeDatabase.memory());
     repo = ElectricityRepository(db);
   });
 
@@ -18,88 +19,110 @@ void main() {
     await db.close();
   });
 
-  group('ElectricityRepository', () {
-    test('getActiveRate returns correct rate based on effective_from date', () async {
-      await repo.addRate(const ElectricityRatesCompanion(
-        ratePerUnit: Value(5.0),
-        effectiveFrom: Value('2023-01-01'),
-      ));
+  test('ElectricityRepository getActiveRate returns correct rate based on effective_from date', () async {
+    await repo.addRate(const ElectricityRatesCompanion(
+      ratePerUnit: Value(0.12),
+      effectiveFrom: Value('2023-01-01'),
+    ));
 
-      await repo.addRate(const ElectricityRatesCompanion(
-        ratePerUnit: Value(6.5),
-        effectiveFrom: Value('2023-06-01'),
-      ));
+    await repo.addRate(const ElectricityRatesCompanion(
+      ratePerUnit: Value(0.15),
+      effectiveFrom: Value('2023-06-01'),
+    ));
 
-      final rateBeforeJune = await repo.getActiveRate('2023-05-15');
-      expect(rateBeforeJune, 5.0);
+    await repo.addRate(const ElectricityRatesCompanion(
+      ratePerUnit: Value(0.14),
+      effectiveFrom: Value('2024-01-01'),
+    ));
 
-      final rateAfterJune = await repo.getActiveRate('2023-06-15');
-      expect(rateAfterJune, 6.5);
-    });
+    final rateBefore2023 = await repo.getActiveRate('2022-12-31');
+    expect(rateBefore2023, flutter_test.isNull);
 
-    test('getConsumptionForReading computes correctly based on ordered readings', () async {
-      await repo.addReading(const ElectricityReadingsCompanion(
-        readingDate: Value('2023-01-01'),
-        meterValue: Value(100.0),
-        billingCycle: Value('monthly'),
-      ));
+    final rateInMarch2023 = await repo.getActiveRate('2023-03-15');
+    expect(rateInMarch2023, 0.12);
 
-      await repo.addReading(const ElectricityReadingsCompanion(
-        readingDate: Value('2023-02-01'),
-        meterValue: Value(150.0),
-        billingCycle: Value('monthly'),
-      ));
+    final rateInJuly2023 = await repo.getActiveRate('2023-07-20');
+    expect(rateInJuly2023, 0.15);
 
-      await repo.addReading(const ElectricityReadingsCompanion(
-        readingDate: Value('2023-03-01'),
-        meterValue: Value(220.0),
-        billingCycle: Value('monthly'),
-      ));
+    final rateToday = await repo.getActiveRate('2024-10-24');
+    expect(rateToday, 0.14);
+  });
 
-      final readings = await repo.getReadings();
+  test('ElectricityRepository getConsumptionForReading computes correctly based on ordered readings', () async {
+    final now = DateTime.now().toUtc().toIso8601String();
 
-      // They are returned in descending order by readingDate
-      expect(readings.length, 3);
+    final id1 = 'id-1';
+    await db.into(db.electricityReadings).insert(
+      ElectricityReadingsCompanion.insert(
+        id: id1,
+        readingDate: '2023-08-01',
+        meterValue: 12000.0,
+        billingCycle: 'monthly',
+        createdAt: now,
+        updatedAt: now,
+      )
+    );
 
-      final readingMarch = readings[0]; // 2023-03-01
-      final readingFeb = readings[1];   // 2023-02-01
-      final readingJan = readings[2];   // 2023-01-01
+    final id2 = 'id-2';
+    await db.into(db.electricityReadings).insert(
+      ElectricityReadingsCompanion.insert(
+        id: id2,
+        readingDate: '2023-09-01',
+        meterValue: 12400.0,
+        billingCycle: 'monthly',
+        createdAt: now,
+        updatedAt: now,
+      )
+    );
 
-      final consumptionJan = await repo.getConsumptionForReading(readingJan.id);
-      expect(consumptionJan, null); // First reading
+    final id3 = 'id-3';
+    await db.into(db.electricityReadings).insert(
+      ElectricityReadingsCompanion.insert(
+        id: id3,
+        readingDate: '2023-10-01',
+        meterValue: 12850.5,
+        billingCycle: 'monthly',
+        createdAt: now,
+        updatedAt: now,
+      )
+    );
 
-      final consumptionFeb = await repo.getConsumptionForReading(readingFeb.id);
-      expect(consumptionFeb, 50.0); // 150 - 100
+    final cons1 = await repo.getConsumptionForReading(id1);
+    expect(cons1, flutter_test.isNull);
 
-      final consumptionMarch = await repo.getConsumptionForReading(readingMarch.id);
-      expect(consumptionMarch, 70.0); // 220 - 150
-    });
+    final cons2 = await repo.getConsumptionForReading(id2);
+    expect(cons2, 400.0);
 
-    test('updateReading modifies reading, updates updatedAt, and clears syncedAt', () async {
-      await repo.addReading(const ElectricityReadingsCompanion(
-        readingDate: Value('2023-01-01'),
-        meterValue: Value(100.0),
-        billingCycle: Value('monthly'),
-      ));
+    final cons3 = await repo.getConsumptionForReading(id3);
+    expect(cons3, 450.5);
+  });
 
-      var readings = await repo.getReadings();
-      final readingId = readings.first.id;
+  test('ElectricityRepository updateReading modifies reading, updates updatedAt, and clears syncedAt', () async {
+    final oldTime = DateTime.now().subtract(const Duration(days: 1)).toUtc().toIso8601String();
 
-      // Simulate a sync occurring
-      await (db.update(db.electricityReadings)..where((t) => t.id.equals(readingId)))
-        .write(const ElectricityReadingsCompanion(syncedAt: Value('2023-01-02T10:00:00Z')));
+    final id1 = 'id-1';
+    await db.into(db.electricityReadings).insert(
+      ElectricityReadingsCompanion.insert(
+        id: id1,
+        readingDate: '2023-08-01',
+        meterValue: 12000.0,
+        billingCycle: 'monthly',
+        createdAt: oldTime,
+        updatedAt: oldTime,
+        syncedAt: Value(oldTime),
+      )
+    );
 
-      readings = await repo.getReadings();
-      expect(readings.first.syncedAt, matcher.isNotNull);
+    await repo.updateReading(id1, const ElectricityReadingsCompanion(
+      meterValue: Value(12010.0),
+      note: Value('Corrected'),
+    ));
 
-      // Now update the reading
-      await repo.updateReading(readingId, const ElectricityReadingsCompanion(
-        meterValue: Value(105.0),
-      ));
+    final reading = await (db.select(db.electricityReadings)..where((t) => t.id.equals(id1))).getSingle();
 
-      readings = await repo.getReadings();
-      expect(readings.first.meterValue, 105.0);
-      expect(readings.first.syncedAt, matcher.isNull);
-    });
+    expect(reading.meterValue, 12010.0);
+    expect(reading.note, 'Corrected');
+    expect(reading.updatedAt, isNot(oldTime));
+    expect(reading.syncedAt, flutter_test.isNull);
   });
 }
