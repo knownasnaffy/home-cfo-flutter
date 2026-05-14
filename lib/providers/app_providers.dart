@@ -21,3 +21,33 @@ final electricityReadingsProvider = FutureProvider<List<ElectricityReading>>((re
   final repo = ref.watch(electricityRepositoryProvider);
   return repo.getReadings();
 });
+
+final ironingActivePriceProvider = FutureProvider.family<double?, String>((ref, date) async {
+  final repo = ref.watch(ironingRepositoryProvider);
+  return repo.getActivePrice(date);
+});
+
+final electricityActiveRateProvider = FutureProvider.family<double?, String>((ref, date) async {
+  final repo = ref.watch(electricityRepositoryProvider);
+  return repo.getActiveRate(date);
+});
+
+final ironingPriceHistoryProvider = FutureProvider<List<IroningPrice>>((ref) async {
+  final repo = ref.watch(ironingRepositoryProvider);
+  return repo.getPriceHistory();
+});
+
+final electricityRateHistoryProvider = FutureProvider<List<ElectricityRate>>((ref) async {
+  final repo = ref.watch(electricityRepositoryProvider);
+  return repo.getRateHistory();
+});
+
+final electricityConsumptionProvider = FutureProvider.family<double?, String>((ref, id) async {
+  final repo = ref.watch(electricityRepositoryProvider);
+  return repo.getConsumptionForReading(id);
+});
+
+final lastSyncedAtProvider = FutureProvider<String?>((ref) async {
+  final repo = ref.watch(syncRepositoryProvider);
+  return repo.getLastSyncedAt();
+});

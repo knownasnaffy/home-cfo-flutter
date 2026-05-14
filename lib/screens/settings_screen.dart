@@ -1,19 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
 import 'history_screen.dart';
 import 'sync_setup_screen.dart';
+import '../providers/app_providers.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _syncEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSyncPreference();
+  }
+
+  Future<void> _loadSyncPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _syncEnabled = prefs.getBool('syncEnabled') ?? true;
+    });
+  }
+
+  Future<void> _updateSyncPreference(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('syncEnabled', value);
+    setState(() {
+      _syncEnabled = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,9 +170,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Switch(
                 value: _syncEnabled,
                 onChanged: (value) {
-                  setState(() {
-                    _syncEnabled = value;
-                  });
+                  _updateSyncPreference(value);
+                  if (value) {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncSetupScreen()));
+                  }
                 },
                 activeThumbColor: AppTheme.secondary,
                 inactiveThumbColor: AppTheme.outlineVariant,
@@ -169,12 +195,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: AppTheme.outline,
                   ),
                 ),
-                Text(
-                  'Today, 10:45 AM',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final lastSyncedAsync = ref.watch(lastSyncedAtProvider);
+                    final lastSynced = lastSyncedAsync.value;
+                    return Text(
+                      lastSynced != null ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSynced).toLocal()) : 'Never synced',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    );
+                  }
                 ),
               ],
             ),
