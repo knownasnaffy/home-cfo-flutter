@@ -11,6 +11,7 @@ import 'new_ironing_transaction_screen.dart';
 import 'transaction_history_screen.dart';
 import 'ironing_home_screen.dart';
 import 'electricity_home_screen.dart';
+import 'history_screen.dart';
 import '../providers/app_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -20,6 +21,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final balanceAsync = ref.watch(ironingBalanceProvider);
     final recentTransactionsAsync = ref.watch(recentIroningTransactionsProvider);
+    final readingsAsync = ref.watch(electricityReadingsProvider);
 
     return Scaffold(
       appBar: const TopAppBar(
@@ -36,7 +38,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             _buildQuickActions(context),
             const SizedBox(height: 32),
-            _buildMainModules(context, balanceAsync),
+            _buildMainModules(context, balanceAsync, recentTransactionsAsync, readingsAsync),
             const SizedBox(height: 32),
             _buildRecentLedger(context, recentTransactionsAsync),
           ],
@@ -125,7 +127,7 @@ class DashboardScreen extends ConsumerWidget {
           backgroundColor: AppTheme.surfaceContainerLowest,
           foregroundColor: AppTheme.onSurface,
           borderColor: AppTheme.surfaceVariant,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionHistoryScreen())),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
         ),
         _buildActionCard(
           context: context,
@@ -187,11 +189,39 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMainModules(BuildContext context, AsyncValue<double> balanceAsync) {
+  Widget _buildMainModules(BuildContext context, AsyncValue<double> balanceAsync, AsyncValue<List<IroningTransaction>> recentTransactionsAsync, AsyncValue<List<ElectricityReading>> readingsAsync) {
     final balanceStr = balanceAsync.maybeWhen(
-      data: (balance) => formatCurrency(balance),
+      data: (balance) => formatCurrency(balance.abs()),
       orElse: () => '...',
     );
+
+    final balanceColor = balanceAsync.maybeWhen(
+      data: (balance) => balance > 0 ? AppTheme.secondary : (balance < 0 ? AppTheme.error : AppTheme.onSurface),
+      orElse: () => AppTheme.onSurface,
+    );
+
+    final lastTransactionDate = recentTransactionsAsync.maybeWhen(
+      data: (txs) => txs.isNotEmpty ? txs.first.date : '—',
+      orElse: () => '—',
+    );
+
+    String gridVal1 = '—';
+    String gridVal2 = '—';
+    String footerValue = '—';
+
+    readingsAsync.whenData((readings) {
+      if (readings.isNotEmpty) {
+        final last = readings.last;
+        gridVal1 = '${last.meterValue}';
+        footerValue = last.readingDate;
+
+        if (readings.length > 1) {
+          final prev = readings[readings.length - 2];
+          final delta = last.meterValue - prev.meterValue;
+          gridVal2 = delta > 0 ? '+${delta.toStringAsFixed(1)}' : delta.toStringAsFixed(1);
+        }
+      }
+    });
 
     return Column(
       children: [
@@ -203,9 +233,9 @@ class DashboardScreen extends ConsumerWidget {
           title: 'Ironing Service',
           valueLabel: 'Current Balance',
           value: balanceStr,
-          valueColor: AppTheme.error,
+          valueColor: balanceColor,
           footerLabel: 'Last Transaction',
-          footerValue: 'Oct 24, 2023',
+          footerValue: lastTransactionDate,
           actionText: 'View',
           onActionTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IroningHomeScreen())),
         ),
@@ -218,15 +248,15 @@ class DashboardScreen extends ConsumerWidget {
           title: 'Electricity',
           isGridValue: true,
           gridVal1Label: 'Meter Reading',
-          gridVal1: '12,482',
-          gridVal1Suffix: 'kWh',
+          gridVal1: gridVal1,
+          gridVal1Suffix: ' kWh',
           gridVal1Color: AppTheme.primary,
           gridVal2Label: 'Consumption',
-          gridVal2: '+342',
-          gridVal2Suffix: 'kWh',
+          gridVal2: gridVal2,
+          gridVal2Suffix: ' kWh',
           gridVal2Color: AppTheme.onSecondaryContainer,
           footerLabel: 'Last Reading Date',
-          footerValue: 'Nov 01, 2023',
+          footerValue: footerValue,
           actionText: 'History',
           onActionTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ElectricityHomeScreen())),
         ),
@@ -482,17 +512,33 @@ class DashboardScreen extends ConsumerWidget {
                 children: transactions.map<Widget>((tx) {
                   final amount = tx.type == 'regular' ? tx.amountPaid ?? 0.0 : tx.amount ?? 0.0;
                   final formattedAmount = formatCurrency(amount);
-                  final isCredit = tx.direction == 'credit' || (tx.type == 'regular' && (tx.amountPaid ?? 0) > (tx.totalDue ?? 0));
+
+                  bool isCredit = false;
+                  String displayAmount = formattedAmount;
+                  Color amountColor = AppTheme.onSurface;
+                  String displayTitle = '';
+
+                  if (tx.type == 'reset') {
+                    displayAmount = formatCurrency(0);
+                    amountColor = AppTheme.onSurface;
+                    displayTitle = 'Balance Reset';
+                  } else {
+                    isCredit = tx.direction == 'credit' || (tx.type == 'regular' && (tx.amountPaid ?? 0) > (tx.totalDue ?? 0));
+                    displayAmount = '${isCredit ? '+' : '-'}$formattedAmount';
+                    amountColor = isCredit ? AppTheme.onSecondaryContainer : AppTheme.error;
+                    displayTitle = tx.type == 'regular' ? 'Regular Service' : 'Custom Transaction';
+                  }
+
                   return Column(
                     children: [
                       _buildLedgerRow(
                         tx: tx,
                         context: context,
-                        icon: tx.type == 'regular' ? Symbols.local_laundry_service : Symbols.payments,
-                        title: tx.type == 'regular' ? 'Regular Service' : 'Custom Transaction',
+                        icon: tx.type == 'regular' ? Symbols.local_laundry_service : (tx.type == 'reset' ? Symbols.restart_alt : Symbols.payments),
+                        title: displayTitle,
                         subtitle: tx.label ?? tx.type,
-                        amount: '${isCredit ? '+' : '-'}$formattedAmount',
-                        amountColor: isCredit ? AppTheme.onSecondaryContainer : AppTheme.error,
+                        amount: displayAmount,
+                        amountColor: amountColor,
                         date: tx.date,
                       ),
                       if (tx != transactions.last) const Divider(height: 1, color: AppTheme.surfaceVariant),
