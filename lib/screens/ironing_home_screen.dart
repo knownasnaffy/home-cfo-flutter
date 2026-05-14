@@ -92,10 +92,14 @@ class IroningHomeScreen extends ConsumerWidget {
                   balanceAsync.when(
                     data: (balance) {
                       final formatted = formatCurrency(balance.abs());
+                      Color balanceColor = AppTheme.onSurface;
+                      if (balance > 0) balanceColor = AppTheme.secondary;
+                      if (balance < 0) balanceColor = AppTheme.error;
+
                       return Text(
                         formatted,
                         style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          color: Colors.white,
+                          color: balanceColor,
                           fontSize: 40,
                         ),
                       );
@@ -485,7 +489,7 @@ class IroningHomeScreen extends ConsumerWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      '₹10',
+                    formatCurrency(10),
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         color: AppTheme.onSecondaryFixed,
                       ),
