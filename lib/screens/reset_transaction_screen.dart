@@ -1,10 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:drift/drift.dart' as drift;
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import '../providers/app_providers.dart';
+import '../utils/currency_formatter.dart';
+import '../db/database.dart';
+import '../providers/db_provider.dart';
 
-class ResetTransactionScreen extends StatelessWidget {
+class ResetTransactionScreen extends ConsumerStatefulWidget {
   const ResetTransactionScreen({super.key});
+
+  @override
+  ConsumerState<ResetTransactionScreen> createState() => _ResetTransactionScreenState();
+}
+
+class _ResetTransactionScreenState extends ConsumerState<ResetTransactionScreen> {
+  String _reason = '';
+  final _reasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +62,8 @@ class ResetTransactionScreen extends StatelessWidget {
   }
 
   Widget _buildBalanceSummaryCard(BuildContext context) {
+    final balanceAsync = ref.watch(ironingBalanceProvider);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -67,26 +89,32 @@ class ResetTransactionScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '₹',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: AppTheme.onSurface,
-                  fontSize: 28,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '142.50',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: AppTheme.onSurface,
-                  fontSize: 28,
-                ),
-              ),
-            ],
+          balanceAsync.when(
+            data: (balance) {
+              final formattedBalance = formatCurrency(balance.abs());
+              Color balanceColor = AppTheme.onSurface;
+              if (balance > 0) {
+                balanceColor = AppTheme.secondary;
+              } else if (balance < 0) {
+                balanceColor = AppTheme.error;
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    balance < 0 ? '- $formattedBalance' : formattedBalance,
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                      color: balanceColor,
+                      fontSize: 28,
+                    ),
+                  ),
+                ],
+              );
+            },
+            loading: () => const CircularProgressIndicator(),
+            error: (e, st) => Text('Error: $e'),
           ),
           const SizedBox(height: 4),
           Text(
@@ -174,6 +202,10 @@ class ResetTransactionScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               TextFormField(
+                controller: _reasonController,
+                onChanged: (val) {
+                  setState(() { _reason = val; });
+                },
                 maxLines: 4,
                 style: Theme.of(context).textTheme.bodyMedium,
                 decoration: InputDecoration(
@@ -194,7 +226,10 @@ class ResetTransactionScreen extends StatelessWidget {
                   contentPadding: const EdgeInsets.all(16),
                   suffixIcon: IconButton(
                     icon: const Icon(Symbols.close, size: 14, color: AppTheme.outlineVariant),
-                    onPressed: () {},
+                    onPressed: () {
+                      _reasonController.clear();
+                      setState(() { _reason = ''; });
+                    },
                   ),
                   suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 ),
@@ -247,7 +282,18 @@ class ResetTransactionScreen extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              final repo = ref.read(ironingRepositoryProvider);
+              await repo.addTransaction(IroningTransactionsCompanion(
+                date: drift.Value(DateTime.now().toUtc().toIso8601String().substring(0, 10)),
+                type: const drift.Value('reset'),
+                reason: drift.Value(_reason.isEmpty ? null : _reason),
+              ));
+              ref.invalidate(ironingBalanceProvider);
+              ref.invalidate(allIroningTransactionsProvider);
+              ref.invalidate(recentIroningTransactionsProvider);
+              if (context.mounted) Navigator.pop(context);
+            },
             icon: const Icon(Symbols.history_edu, color: AppTheme.onPrimary),
             label: const Text('Confirm Balance Reset'),
             style: ElevatedButton.styleFrom(

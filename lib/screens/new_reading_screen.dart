@@ -1,17 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:drift/drift.dart' as drift;
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import '../providers/app_providers.dart';
+import '../providers/db_provider.dart';
+import '../db/database.dart';
+import '../utils/currency_formatter.dart';
 
-class NewReadingScreen extends StatefulWidget {
+class NewReadingScreen extends ConsumerStatefulWidget {
   const NewReadingScreen({super.key});
 
   @override
-  State<NewReadingScreen> createState() => _NewReadingScreenState();
+  ConsumerState<NewReadingScreen> createState() => _NewReadingScreenState();
 }
 
-class _NewReadingScreenState extends State<NewReadingScreen> {
-  int _selectedBillingCycle = 0; // 0 for Actual, 1 for Estimate
+class _NewReadingScreenState extends ConsumerState<NewReadingScreen> {
+  int _selectedBillingCycle = 0; // 0 for monthly, 1 for bimonthly
+  DateTime _selectedDate = DateTime.now();
+  final _meterValueController = TextEditingController();
+  final _noteController = TextEditingController();
+
+  @override
+  void dispose() {
+    _meterValueController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +79,13 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
         Text(
           'New Reading',
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
-            color: AppTheme.primary,
+            color: AppTheme.onSurface,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Text(
-          'Log your current electricity consumption for billing accuracy.',
+          'Log your current electricity meter value to track consumption and estimated costs.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: AppTheme.onSurfaceVariant,
           ),
@@ -63,163 +95,196 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
   }
 
   Widget _buildContextCards(BuildContext context) {
-    return Column(
+    final readingsAsync = ref.watch(electricityReadingsProvider);
+    final previousReading = readingsAsync.whenOrNull(
+      data: (readings) => readings.isNotEmpty ? readings.first : null,
+    );
+
+    return Row(
       children: [
-        _buildContextCard(
-          context: context,
-          icon: Symbols.history,
-          iconColor: AppTheme.secondary,
-          title: 'Previous Reading',
-          value: '12,450.00',
-          valueSuffix: 'kWh',
-          valueColor: AppTheme.primary,
-          footerText: 'Recorded on Oct 12, 2023',
-          bgColor: Colors.white,
-          borderColor: AppTheme.surfaceVariant,
-          titleColor: AppTheme.onSurfaceVariant,
-          footerColor: AppTheme.onSurfaceVariant,
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.surfaceVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Symbols.history, size: 16, color: AppTheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PREVIOUS',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppTheme.onSurfaceVariant,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  previousReading != null ? '${previousReading.meterValue} kWh' : '— kWh',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppTheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (previousReading != null)
+                  Text(
+                    DateFormat('MMM d, yyyy').format(DateTime.parse(previousReading.readingDate)),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.outline,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
-        _buildContextCard(
-          context: context,
-          icon: Symbols.trending_up,
-          iconColor: AppTheme.tertiaryFixedDim,
-          title: 'Estimated Cost',
-          value: '--.--',
-          valueSuffix: 'USD',
-          valueColor: AppTheme.onPrimary,
-          footerText: 'Based on new input',
-          bgColor: AppTheme.primaryContainer,
-          borderColor: AppTheme.onPrimaryContainer,
-          titleColor: AppTheme.onPrimaryContainer,
-          footerColor: AppTheme.onPrimaryContainer,
-          isItalicFooter: true,
+        const SizedBox(width: 16),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Symbols.bolt, size: 16, color: AppTheme.secondaryContainer),
+                    const SizedBox(width: 8),
+                    Text(
+                      'EST. COST',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppTheme.onPrimaryContainer,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Builder(
+                  builder: (context) {
+                    final enteredValue = double.tryParse(_meterValueController.text);
+                    final double consumption = (enteredValue != null && previousReading != null)
+                        ? enteredValue - previousReading.meterValue
+                        : 0.0;
+
+                    final activeRateAsync = ref.watch(electricityActiveRateProvider(_selectedDate.toUtc().toIso8601String().substring(0, 10)));
+                    final rate = activeRateAsync.whenOrNull(data: (r) => r?.ratePerUnit) ?? 0.0;
+
+                    if (rate == 0.0 || consumption <= 0) {
+                      return Text(
+                        '—',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }
+
+                    final estimatedCost = consumption * rate;
+                    return Text(
+                      formatCurrency(estimatedCost),
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }
+                ),
+                Text(
+                  'Based on current rate',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildContextCard({
-    required BuildContext context,
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String value,
-    required String valueSuffix,
-    required Color valueColor,
-    required String footerText,
-    required Color bgColor,
-    required Color borderColor,
-    required Color titleColor,
-    required Color footerColor,
-    bool isItalicFooter = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: iconColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title.toUpperCase(),
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: titleColor,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value,
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: valueColor,
-                  fontSize: 28,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                valueSuffix,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: titleColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            footerText,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: footerColor,
-              fontStyle: isItalicFooter ? FontStyle.italic : FontStyle.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildForm(BuildContext context) {
+    final String formattedDate = DateFormat('EEEE, MMM d, yyyy').format(_selectedDate);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.surfaceVariant),
+        color: AppTheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
+        border: Border.all(color: AppTheme.surfaceVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildFormField(
             context: context,
-            label: 'Current Meter Reading (kWh)',
+            label: 'Current Meter Value',
             child: TextFormField(
+              controller: _meterValueController,
+              onChanged: (_) => setState(() {}),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                color: AppTheme.onSurface,
+              ),
               decoration: _buildInputDecoration(
                 context,
-                hint: '000000.00',
-                suffixIcon: Symbols.bolt,
+                hint: '0.00',
+                suffixIcon: Symbols.speed,
+              ).copyWith(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               ),
             ),
           ),
           const SizedBox(height: 24),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _buildFormField(
                   context: context,
                   label: 'Reading Date',
-                  child: TextFormField(
-                    keyboardType: TextInputType.datetime,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    decoration: _buildInputDecoration(context),
+                  child: GestureDetector(
+                    onTap: _pickDate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              formattedDate,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppTheme.onSurface,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(Symbols.calendar_today, color: AppTheme.onSurfaceVariant, size: 20),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -232,7 +297,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
                     height: 56,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceContainerLow,
+                      color: AppTheme.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -251,7 +316,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
                               ),
                               alignment: Alignment.center,
                               child: Text(
-                                'Actual',
+                                'Monthly',
                                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                   color: _selectedBillingCycle == 0 ? AppTheme.primary : AppTheme.onSurfaceVariant,
                                 ),
@@ -272,7 +337,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
                               ),
                               alignment: Alignment.center,
                               child: Text(
-                                'Estimate',
+                                'Bi-monthly',
                                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                   color: _selectedBillingCycle == 1 ? AppTheme.primary : AppTheme.onSurfaceVariant,
                                 ),
@@ -292,6 +357,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
             context: context,
             label: 'Reading Note (Optional)',
             child: TextFormField(
+              controller: _noteController,
               maxLines: 4,
               style: Theme.of(context).textTheme.bodyMedium,
               decoration: _buildInputDecoration(
@@ -349,6 +415,21 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
   }
 
   Widget _buildConsumptionPreview(BuildContext context) {
+    final readingsAsync = ref.watch(electricityReadingsProvider);
+    final previousReading = readingsAsync.whenOrNull(
+      data: (readings) => readings.isNotEmpty ? readings.first : null,
+    );
+
+    final enteredValue = double.tryParse(_meterValueController.text);
+    final double? consumption = (enteredValue != null && previousReading != null)
+        ? enteredValue - previousReading.meterValue
+        : null;
+
+    final String displayConsumption = consumption != null ? consumption.toStringAsFixed(1) : '—';
+    const double targetConsumption = 450.0; // example target
+    final double progress = (consumption ?? 0) / targetConsumption;
+    final double boundedProgress = progress > 1.0 ? 1.0 : (progress < 0 ? 0 : progress);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -386,7 +467,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         Text(
-                          '0',
+                          displayConsumption,
                           style: Theme.of(context).textTheme.displayLarge?.copyWith(
                             color: AppTheme.primary,
                             fontSize: 28,
@@ -408,28 +489,22 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppTheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(9999),
-                      ),
-                      child: Text(
-                        'Normal Pace',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.onSecondaryContainer,
+                    if (consumption != null && consumption > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(9999),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        child: Text(
+                          'Normal Pace',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.onSecondaryContainer,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Avg. 14.2 kWh / day',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -445,7 +520,7 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
             ),
             alignment: Alignment.centerLeft,
             child: FractionallySizedBox(
-              widthFactor: 0.05,
+              widthFactor: boundedProgress,
               child: Container(
                 decoration: BoxDecoration(
                   color: AppTheme.secondary,
@@ -482,7 +557,23 @@ class _NewReadingScreenState extends State<NewReadingScreen> {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () async {
+          final double meterValue = double.tryParse(_meterValueController.text) ?? 0.0;
+          final String billingCycle = _selectedBillingCycle == 0 ? 'monthly' : 'bimonthly';
+          final String note = _noteController.text;
+
+          final repo = ref.read(electricityRepositoryProvider);
+          await repo.addReading(ElectricityReadingsCompanion(
+            readingDate: drift.Value(_selectedDate.toUtc().toIso8601String().substring(0, 10)),
+            meterValue: drift.Value(meterValue),
+            billingCycle: drift.Value(billingCycle),
+            note: drift.Value(note.isEmpty ? null : note),
+          ));
+
+          ref.invalidate(electricityReadingsProvider);
+
+          if (context.mounted) Navigator.pop(context);
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primary,
           foregroundColor: AppTheme.onPrimary,
