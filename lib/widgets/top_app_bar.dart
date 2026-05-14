@@ -63,10 +63,10 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
                          decoration: BoxDecoration(
                            shape: BoxShape.circle,
                            border: Border.all(color: AppTheme.outlineVariant),
-                           image: DecorationImage(
+                           image: avatarUrl!.isNotEmpty ? DecorationImage(
                              image: NetworkImage(avatarUrl!),
                              fit: BoxFit.cover,
-                           )
+                           ) : null,
                          ),
                        ),
                        const SizedBox(width: 12),
@@ -99,10 +99,10 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(color: AppTheme.outlineVariant),
-                          image: DecorationImage(
+                          image: avatarUrl!.isNotEmpty ? DecorationImage(
                             image: NetworkImage(avatarUrl!),
                             fit: BoxFit.cover,
-                          )
+                          ) : null,
                         ),
                       ),
                     ]
