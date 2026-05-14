@@ -1,6 +1,31 @@
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../db/database.dart';
 import 'db_provider.dart';
+import '../db/repositories/ironing_repository.dart';
+import '../db/repositories/electricity_repository.dart';
+
+extension IroningRepositoryExtension on IroningRepository {
+  Future<IroningPrice?> getActivePriceRow(String date) async {
+    final query = db.select(db.ironingPrices)
+      ..where((t) => t.effectiveFrom.isSmallerOrEqualValue(date))
+      ..where((t) => t.deletedAt.isNull())
+      ..orderBy([(t) => OrderingTerm(expression: t.effectiveFrom, mode: OrderingMode.desc)])
+      ..limit(1);
+    return await query.getSingleOrNull();
+  }
+}
+
+extension ElectricityRepositoryExtension on ElectricityRepository {
+  Future<ElectricityRate?> getActiveRateRow(String date) async {
+    final query = db.select(db.electricityRates)
+      ..where((t) => t.effectiveFrom.isSmallerOrEqualValue(date))
+      ..where((t) => t.deletedAt.isNull())
+      ..orderBy([(t) => OrderingTerm(expression: t.effectiveFrom, mode: OrderingMode.desc)])
+      ..limit(1);
+    return await query.getSingleOrNull();
+  }
+}
 
 final ironingBalanceProvider = FutureProvider<double>((ref) async {
   final repo = ref.watch(ironingRepositoryProvider);
@@ -9,7 +34,7 @@ final ironingBalanceProvider = FutureProvider<double>((ref) async {
 
 final recentIroningTransactionsProvider = FutureProvider<List<IroningTransaction>>((ref) async {
   final repo = ref.watch(ironingRepositoryProvider);
-  return repo.getRecentTransactions(5); // Adjust limit as necessary
+  return repo.getRecentTransactions(5);
 });
 
 final allIroningTransactionsProvider = FutureProvider<List<IroningTransaction>>((ref) async {
@@ -22,14 +47,14 @@ final electricityReadingsProvider = FutureProvider<List<ElectricityReading>>((re
   return repo.getReadings();
 });
 
-final ironingActivePriceProvider = FutureProvider.family<double?, String>((ref, date) async {
+final ironingActivePriceProvider = FutureProvider.family<IroningPrice?, String>((ref, date) async {
   final repo = ref.watch(ironingRepositoryProvider);
-  return repo.getActivePrice(date);
+  return repo.getActivePriceRow(date);
 });
 
-final electricityActiveRateProvider = FutureProvider.family<double?, String>((ref, date) async {
+final electricityActiveRateProvider = FutureProvider.family<ElectricityRate?, String>((ref, date) async {
   final repo = ref.watch(electricityRepositoryProvider);
-  return repo.getActiveRate(date);
+  return repo.getActiveRateRow(date);
 });
 
 final ironingPriceHistoryProvider = FutureProvider<List<IroningPrice>>((ref) async {
