@@ -1,18 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:drift/drift.dart' as drift;
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import '../providers/app_providers.dart';
+import '../providers/db_provider.dart';
+import '../utils/currency_formatter.dart';
+import '../db/database.dart';
 
-class NewIroningTransactionSummaryScreen extends StatefulWidget {
+class NewIroningTransactionSummaryScreen extends ConsumerStatefulWidget {
   const NewIroningTransactionSummaryScreen({super.key});
 
   @override
-  State<NewIroningTransactionSummaryScreen> createState() => _NewIroningTransactionSummaryScreenState();
+  ConsumerState<NewIroningTransactionSummaryScreen> createState() => _NewIroningTransactionSummaryScreenState();
 }
 
-class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransactionSummaryScreen> {
+class _NewIroningTransactionSummaryScreenState extends ConsumerState<NewIroningTransactionSummaryScreen> {
+  int _clothCount = 12;
+  String _amountPaidText = '20.00';
+  final _amountPaidController = TextEditingController(text: '20.00');
+
+  @override
+  void dispose() {
+    _amountPaidController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final today = DateTime.now().toUtc().toIso8601String().substring(0, 10);
+    final activePriceAsync = ref.watch(ironingActivePriceProvider(today));
+
     return Scaffold(
       appBar: const TopAppBar(
         showBackButton: true,
@@ -20,22 +39,29 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
         title: 'New Ironing Transaction',
         avatarUrl: '',
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-        child: Column(
-          children: [
-            _buildServiceDetailsCard(context),
-            const SizedBox(height: 24),
-            _buildTransactionSummary(context),
-            const SizedBox(height: 32),
-            _buildActions(context),
-          ],
-        ),
+      body: activePriceAsync.when(
+        data: (activePriceRow) {
+          final pricePerCloth = activePriceRow?.pricePerCloth ?? 0.0;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+            child: Column(
+              children: [
+                _buildServiceDetailsCard(context, pricePerCloth),
+                const SizedBox(height: 24),
+                _buildTransactionSummary(context, pricePerCloth),
+                const SizedBox(height: 32),
+                _buildActions(context, pricePerCloth),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(child: Text('Error: $e')),
       ),
     );
   }
 
-  Widget _buildServiceDetailsCard(BuildContext context) {
+  Widget _buildServiceDetailsCard(BuildContext context, double pricePerCloth) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -49,86 +75,51 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: AppTheme.surfaceContainerLow,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Symbols.iron, color: AppTheme.secondary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Service Details',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppTheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(9999),
-                  ),
-                  child: Text(
-                    'Regular Ironing',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppTheme.secondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Cloth Count',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  initialValue: '12',
-                  keyboardType: TextInputType.number,
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    color: AppTheme.onSurface,
-                  ),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppTheme.surfaceBright,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppTheme.surfaceVariant, width: 2),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total Items',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppTheme.onSurfaceVariant,
+                      ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppTheme.primary, width: 2),
-                    ),
-                    suffixIcon: Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildStepperButton(Symbols.remove),
-                          const SizedBox(width: 4),
-                          _buildStepperButton(Symbols.add),
+                          _buildStepperButton(Symbols.remove, () {
+                            if (_clothCount > 0) setState(() => _clothCount--);
+                          }),
+                          Container(
+                            width: 48,
+                            alignment: Alignment.center,
+                            child: Text(
+                              '$_clothCount',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: AppTheme.onSurface,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          _buildStepperButton(Symbols.add, () {
+                            setState(() => _clothCount++);
+                          }),
                         ],
                       ),
                     ),
-                    suffixIconConstraints: const BoxConstraints(minHeight: 0, minWidth: 0),
-                  ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -145,7 +136,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Price per item',
+                              'Price Rate',
                               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                 color: AppTheme.onSurfaceVariant,
                               ),
@@ -156,7 +147,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  '₹1.50',
+                                  formatCurrency(pricePerCloth),
                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: AppTheme.primary,
                                     fontWeight: FontWeight.w600,
@@ -215,7 +206,12 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  initialValue: '20.00',
+                  controller: _amountPaidController,
+                  onChanged: (val) {
+                    setState(() {
+                      _amountPaidText = val;
+                    });
+                  },
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
                     color: AppTheme.onSurface,
@@ -244,7 +240,10 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                       borderSide: const BorderSide(color: AppTheme.primary, width: 2),
                     ),
                     suffixIcon: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        _amountPaidController.clear();
+                        setState(() { _amountPaidText = ''; });
+                      },
                       child: Text(
                         'Clear',
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -262,7 +261,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
     );
   }
 
-  Widget _buildStepperButton(IconData icon) {
+  Widget _buildStepperButton(IconData icon, VoidCallback onTap) {
     return Container(
       width: 40,
       height: 40,
@@ -273,7 +272,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: Center(
             child: Icon(icon, color: AppTheme.onSurface),
@@ -283,7 +282,11 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
     );
   }
 
-  Widget _buildTransactionSummary(BuildContext context) {
+  Widget _buildTransactionSummary(BuildContext context, double pricePerCloth) {
+    final double totalDue = _clothCount * pricePerCloth;
+    final double amountPaid = double.tryParse(_amountPaidText) ?? 0.0;
+    final double change = amountPaid - totalDue;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -308,9 +311,9 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
             ),
           ),
           const SizedBox(height: 16),
-          _buildSummaryRow(context, 'Subtotal (12 items × ₹1.50)', '₹18'),
+          _buildSummaryRow(context, 'Subtotal ($_clothCount items × ${formatCurrency(pricePerCloth)})', formatCurrency(totalDue)),
           const SizedBox(height: 8),
-          _buildSummaryRow(context, 'Express Fee (None)', '₹0'),
+          _buildSummaryRow(context, 'Express Fee (None)', formatCurrency(0)),
           const SizedBox(height: 16),
           Divider(height: 1, color: AppTheme.onTertiaryContainer.withValues(alpha: 0.2)),
           const SizedBox(height: 16),
@@ -324,7 +327,7 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                 ),
               ),
               Text(
-                '₹18',
+                formatCurrency(totalDue),
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: Colors.white,
                   fontSize: 28,
@@ -343,9 +346,9 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
                 ),
               ),
               Text(
-                '+₹2',
+                (change > 0 ? '+' : '') + formatCurrency(change),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.secondaryContainer,
+                  color: change >= 0 ? AppTheme.secondaryContainer : AppTheme.errorContainer,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -378,14 +381,31 @@ class _NewIroningTransactionSummaryScreenState extends State<NewIroningTransacti
     );
   }
 
-  Widget _buildActions(BuildContext context) {
+  Widget _buildActions(BuildContext context, double pricePerCloth) {
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context), // Pops back on success
+            onPressed: () async {
+              final double amountPaid = double.tryParse(_amountPaidText) ?? 0.0;
+              final repo = ref.read(ironingRepositoryProvider);
+
+              await repo.addTransaction(IroningTransactionsCompanion(
+                date: drift.Value(DateTime.now().toUtc().toIso8601String().substring(0, 10)),
+                type: const drift.Value('regular'),
+                clothCount: drift.Value(_clothCount),
+                priceSnapshot: drift.Value(pricePerCloth),
+                amountPaid: drift.Value(amountPaid),
+              ));
+
+              ref.invalidate(ironingBalanceProvider);
+              ref.invalidate(allIroningTransactionsProvider);
+              ref.invalidate(recentIroningTransactionsProvider);
+
+              if (context.mounted) Navigator.pop(context);
+            },
             icon: const Icon(Symbols.save, color: Colors.white, fill: 1.0),
             label: const Text('Confirm Transaction'),
             style: ElevatedButton.styleFrom(

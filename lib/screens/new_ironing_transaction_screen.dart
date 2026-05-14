@@ -1,17 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:drift/drift.dart' as drift;
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import '../providers/app_providers.dart';
+import '../providers/db_provider.dart';
+import '../db/database.dart';
 
-class NewIroningTransactionScreen extends StatefulWidget {
+class NewIroningTransactionScreen extends ConsumerStatefulWidget {
   const NewIroningTransactionScreen({super.key});
 
   @override
-  State<NewIroningTransactionScreen> createState() => _NewIroningTransactionScreenState();
+  ConsumerState<NewIroningTransactionScreen> createState() => _NewIroningTransactionScreenState();
 }
 
-class _NewIroningTransactionScreenState extends State<NewIroningTransactionScreen> {
-  int _transactionType = 0; // 0 for Debt, 1 for Credit
+class _NewIroningTransactionScreenState extends ConsumerState<NewIroningTransactionScreen> {
+  int _transactionType = 0; // 0 for Debt (debit), 1 for Credit (credit)
+  DateTime _selectedDate = DateTime.now();
+  final _amountController = TextEditingController();
+  final _labelController = TextEditingController();
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _labelController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,30 +79,31 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
           height: 64,
           decoration: BoxDecoration(
             color: AppTheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryContainer.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: const Icon(
-            Symbols.iron,
-            color: AppTheme.onPrimary,
-            size: 36,
-            fill: 1.0,
-          ),
+          child: const Icon(Symbols.add_card, color: Colors.white, size: 32),
         ),
         const SizedBox(height: 16),
         Text(
-          'New Ironing Transaction',
-          style: Theme.of(context).textTheme.displayMedium?.copyWith(
+          'Custom Ledger Entry',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             color: AppTheme.onSurface,
+            fontWeight: FontWeight.bold,
           ),
-          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
-          'Record a new payment or debt for domestic services',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          'Manually adjust the ironing balance',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: AppTheme.onSurfaceVariant,
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -82,8 +113,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.surfaceVariant),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
@@ -91,19 +121,18 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
             offset: Offset(0, 2),
           ),
         ],
+        border: Border.all(color: AppTheme.surfaceVariant),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildAmountInput(context),
-          const SizedBox(height: 32),
-          _buildTransactionTypeToggle(context),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          _buildTypeSelector(context),
+          const SizedBox(height: 24),
           _buildDescriptionInput(context),
           const SizedBox(height: 24),
-          const Divider(height: 1, color: AppTheme.surfaceVariant),
-          const SizedBox(height: 16),
           _buildDateSelector(context),
         ],
       ),
@@ -115,7 +144,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'TRANSACTION AMOUNT',
+          'AMOUNT',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
             color: AppTheme.onSurfaceVariant,
             letterSpacing: 1.0,
@@ -123,37 +152,35 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+          style: Theme.of(context).textTheme.displayMedium?.copyWith(
             color: AppTheme.onSurface,
-            fontSize: 32,
           ),
           decoration: InputDecoration(
             filled: true,
             fillColor: AppTheme.surfaceContainerLow,
             hintText: '0.00',
-            hintStyle: Theme.of(context).textTheme.displayLarge?.copyWith(
+            hintStyle: Theme.of(context).textTheme.displayMedium?.copyWith(
               color: AppTheme.outlineVariant,
-              fontSize: 32,
             ),
             prefixIcon: Padding(
               padding: const EdgeInsets.only(left: 16, right: 8),
               child: Text(
                 '₹',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: AppTheme.outline,
-                  fontSize: 32,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: AppTheme.onSurfaceVariant,
                 ),
               ),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.transparent, width: 2),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppTheme.primaryFixed, width: 2),
             ),
           ),
@@ -162,12 +189,12 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
     );
   }
 
-  Widget _buildTransactionTypeToggle(BuildContext context) {
+  Widget _buildTypeSelector(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'TRANSACTION TYPE',
+          'ENTRY TYPE',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
             color: AppTheme.onSurfaceVariant,
             letterSpacing: 1.0,
@@ -266,6 +293,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: _labelController,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: AppTheme.onSurface,
           ),
@@ -293,6 +321,13 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
   }
 
   Widget _buildDateSelector(BuildContext context) {
+    final String formattedDate = DateFormat('EEE, MMM d').format(_selectedDate);
+    final String displayDate = _selectedDate.day == DateTime.now().day &&
+            _selectedDate.month == DateTime.now().month &&
+            _selectedDate.year == DateTime.now().year
+        ? 'Today, $formattedDate'
+        : formattedDate;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -301,7 +336,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
             const Icon(Symbols.calendar_today, size: 16, color: AppTheme.onSurfaceVariant),
             const SizedBox(width: 8),
             Text(
-              'Today, Oct 24',
+              displayDate,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: AppTheme.onSurfaceVariant,
               ),
@@ -309,7 +344,7 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
           ],
         ),
         TextButton(
-          onPressed: () {},
+          onPressed: _pickDate,
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
             minimumSize: const Size(0, 0),
@@ -374,7 +409,6 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
           decoration: BoxDecoration(
             color: AppTheme.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
-
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -413,7 +447,27 @@ class _NewIroningTransactionScreenState extends State<NewIroningTransactionScree
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              final double amount = double.tryParse(_amountController.text) ?? 0.0;
+              final direction = _transactionType == 0 ? 'debit' : 'credit';
+              final label = _labelController.text;
+
+              final repo = ref.read(ironingRepositoryProvider);
+
+              await repo.addTransaction(IroningTransactionsCompanion(
+                date: drift.Value(_selectedDate.toUtc().toIso8601String().substring(0, 10)),
+                type: const drift.Value('custom'),
+                amount: drift.Value(amount),
+                direction: drift.Value(direction),
+                label: drift.Value(label.isEmpty ? null : label),
+              ));
+
+              ref.invalidate(ironingBalanceProvider);
+              ref.invalidate(allIroningTransactionsProvider);
+              ref.invalidate(recentIroningTransactionsProvider);
+
+              if (context.mounted) Navigator.pop(context);
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryContainer,
               foregroundColor: Colors.white,
