@@ -396,8 +396,9 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                   final digest = sha256.convert(bytes);
                   await prefs.setString('syncKeyHash', digest.toString());
 
-                  // In a real app we would call full sync here.
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferences saved. Triggering initial full sync.')));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferences saved. Triggering initial full sync.')));
+                  }
                } else if (!_syncEnabled) {
                   await prefs.remove('syncKeyHash');
                }
