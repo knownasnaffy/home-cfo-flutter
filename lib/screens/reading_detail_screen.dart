@@ -3,9 +3,12 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
 import 'history_screen.dart';
+import '../db/database.dart';
 
 class ReadingDetailScreen extends StatelessWidget {
-  const ReadingDetailScreen({super.key});
+  final ElectricityReading reading;
+
+  const ReadingDetailScreen({super.key, required this.reading});
 
   @override
   Widget build(BuildContext context) {
@@ -70,49 +73,32 @@ class ReadingDetailScreen extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppTheme.secondary,
-                        borderRadius: BorderRadius.circular(4),
+                        color: AppTheme.primary,
+                        borderRadius: BorderRadius.circular(9999),
                       ),
-                      child: const Text(
-                        'VERIFIED',
-                        style: TextStyle(
-                          fontFamily: 'Public Sans',
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 1.0,
+                      child: Text(
+                        'Verified',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppTheme.onPrimary,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '42,891.50',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: Colors.white,
-                        fontSize: 36,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'kWh',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppTheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 16),
                 Text(
-                  'Recorded on Oct 24, 2023 • 09:42 AM',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  '${reading.meterValue} kWh',
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: AppTheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Recorded on ${reading.readingDate}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppTheme.onPrimaryContainer.withValues(alpha: 0.8),
                   ),
                 ),
@@ -125,37 +111,26 @@ class ReadingDetailScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: const BoxDecoration(
-                    border: Border(right: BorderSide(color: AppTheme.surfaceContainer)),
+                    border: Border(
+                      right: BorderSide(color: AppTheme.surfaceContainer),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Net Consumption',
+                        'Est. Cost',
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
                           color: AppTheme.outline,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '452.20',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith( // 2xl is 24px usually
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'kWh',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith( // roughly 10-11px
-                              color: AppTheme.outline,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'N/A', // Compute properly if needed, but for now N/A or stub
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
@@ -179,7 +154,7 @@ class ReadingDetailScreen extends StatelessWidget {
                           const Icon(Symbols.trending_up, color: AppTheme.error, size: 20),
                           const SizedBox(width: 4),
                           Text(
-                            '+12.4%',
+                            'N/A',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               color: AppTheme.error,
                               fontWeight: FontWeight.w700,
@@ -226,11 +201,11 @@ class ReadingDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              _buildContextRow(context, 'Cycle Name', 'Q4 Autumn Fiscal'),
+              _buildContextRow(context, 'Cycle Name', reading.billingCycle.toUpperCase()),
               const SizedBox(height: 16),
-              _buildContextRow(context, 'Period', 'Sep 25 - Oct 24'),
+              _buildContextRow(context, 'Period', 'N/A'),
               const SizedBox(height: 16),
-              _buildContextRow(context, 'Rate Class', 'Residential Peak-Saver'),
+              _buildContextRow(context, 'Rate Class', 'Residential'),
             ],
           ),
         ),
@@ -256,7 +231,7 @@ class ReadingDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Source ID: CFO-9921',
+                'Source ID: ${reading.id.toString().length >= 8 ? reading.id.toString().substring(0, 8) : reading.id.toString().toUpperCase()}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppTheme.outlineVariant,
                 ),
@@ -316,9 +291,9 @@ class ReadingDetailScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _buildBarChartRow(
             context: context,
-            label: 'Previous (Sep)',
+            label: 'Previous',
             labelColor: AppTheme.outline,
-            value: '402.15 kWh',
+            value: 'N/A',
             valueColor: AppTheme.primary,
             barColor: AppTheme.outlineVariant,
             barHeight: 12,
@@ -327,9 +302,9 @@ class ReadingDetailScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _buildBarChartRow(
             context: context,
-            label: 'Current (Oct)',
+            label: 'Current',
             labelColor: AppTheme.primary,
-            value: '452.20 kWh',
+            value: 'N/A',
             valueColor: AppTheme.primary,
             barColor: AppTheme.secondary,
             barHeight: 16,
@@ -337,13 +312,6 @@ class ReadingDetailScreen extends StatelessWidget {
             isBold: true,
           ),
           const SizedBox(height: 16),
-          Text(
-            'The higher consumption correlates with the recorded temperature drop of 8°C in this billing period.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.outline,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
         ],
       ),
     );
@@ -438,7 +406,7 @@ class ReadingDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Reading taken manually. Meter face was clear of obstruction. No signs of tampering or damage to the seal. Compared value against smart hub app, variance within expected 0.5% margin. Note: Outdoor heating system activated on Oct 15.',
+            reading.note?.isNotEmpty == true ? reading.note! : 'No notes recorded for this reading.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppTheme.onSurfaceVariant,
               height: 1.6,

@@ -335,7 +335,7 @@ class ElectricityHomeScreen extends ConsumerWidget {
                         date: r.readingDate,
                         reading: '${r.meterValue} kWh',
                         delta: deltaText,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReadingDetailScreen(reading: r))),
                       ),
                       if (r != readings.last) const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
                     ],
