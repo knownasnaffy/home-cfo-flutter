@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
@@ -172,7 +172,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onChanged: (value) {
                   _updateSyncPreference(value);
                   if (value) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncSetupScreen()));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncSetupScreen())).then((_) {
+                      _loadSyncPreference();
+                    });
                   }
                 },
                 activeThumbColor: AppTheme.secondary,
@@ -198,13 +200,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Consumer(
                   builder: (context, ref, _) {
                     final lastSyncedAsync = ref.watch(lastSyncedAtProvider);
-                    final lastSynced = lastSyncedAsync.value;
-                    return Text(
-                      lastSynced != null ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSynced).toLocal()) : 'Never synced',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                    return lastSyncedAsync.when(
+                      data: (lastSynced) => Text(
+                        lastSynced != null ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSynced).toLocal()) : 'Never synced',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
+                      loading: () => const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
+                      error: (e, s) => const Text('Error'),
                     );
                   }
                 ),
@@ -235,7 +240,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         icon: Symbols.key,
         title: 'Passphrase Setup',
         subtitle: 'Secure your financial vault',
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncSetupScreen())),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncSetupScreen())).then((_) {
+          _loadSyncPreference();
+        }),
       ),
     );
   }

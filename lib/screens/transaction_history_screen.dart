@@ -28,7 +28,7 @@ class TransactionHistoryScreen extends ConsumerWidget {
           children: [
             _buildHeader(context),
             const SizedBox(height: 24),
-            _buildStatsBentoGrid(context),
+            _buildStatsBentoGrid(context, transactionsAsync),
             const SizedBox(height: 32),
             _buildTransactionLedger(context, transactionsAsync),
             const SizedBox(height: 32),
@@ -108,7 +108,9 @@ class TransactionHistoryScreen extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+          },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -127,100 +129,143 @@ class TransactionHistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsBentoGrid(BuildContext context) {
-    // Note: To match web grid design on mobile, it flows column-wise.
-    return Column(
-      children: [
-        Row(
+  Widget _buildStatsBentoGrid(BuildContext context, AsyncValue<List<IroningTransaction>> transactionsAsync) {
+    return transactionsAsync.when(
+      data: (transactions) {
+        double monthlySpend = 0.0;
+        int monthlyTxCount = 0;
+        double currentBalance = 0.0;
+
+        if (transactions.isNotEmpty) {
+           currentBalance = transactions.first.balanceAfter;
+
+           final now = DateTime.now();
+           for (final tx in transactions) {
+             try {
+                final date = DateTime.parse(tx.date);
+                if (date.year == now.year && date.month == now.month) {
+                  if (tx.type == 'regular') {
+                    monthlySpend += (tx.totalDue ?? 0.0);
+                    monthlyTxCount++;
+                  }
+                }
+             } catch (_) {}
+           }
+        }
+
+        String frequency = 'N/A';
+        String frequencySub = 'Not enough data';
+        if (monthlyTxCount >= 8) {
+          frequency = 'Bi-weekly';
+          frequencySub = '~$monthlyTxCount times this month';
+        } else if (monthlyTxCount >= 3) {
+          frequency = 'Weekly';
+          frequencySub = '~$monthlyTxCount times this month';
+        } else if (monthlyTxCount > 0) {
+          frequency = 'Occasional';
+          frequencySub = '~$monthlyTxCount times this month';
+        }
+
+        String balanceSubtext = currentBalance > 0 ? 'Credit' : (currentBalance < 0 ? 'Debt' : 'Settled');
+        Color balanceColor = currentBalance > 0 ? AppTheme.secondary : (currentBalance < 0 ? AppTheme.error : AppTheme.onSurface);
+
+        return Column(
           children: [
-            Expanded(
-              child: _buildStatCard(
-                context: context,
-                label: 'Monthly Spend',
-                value: '₹284',
-                subLabel: '12% vs last month',
-                subIcon: Symbols.trending_down,
-                subIconColor: AppTheme.secondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x33000000),
-                      blurRadius: 16,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    context: context,
+                    label: 'Monthly Due',
+                    value: formatCurrency(monthlySpend),
+                    subLabel: 'This month\'s service due',
+                    subIcon: Symbols.trending_up,
+                    subIconColor: AppTheme.error,
+                  ),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -10,
-                      bottom: -10,
-                      child: Icon(
-                        Symbols.iron,
-                        size: 120,
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'IRONING FREQUENCY',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppTheme.onTertiaryContainer,
-                            letterSpacing: 2.0,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Weekly',
-                          style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                            color: Colors.white,
-                            fontSize: 28,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Every Tuesday & Friday',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.onTertiaryContainer,
-                          ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 16,
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
-                  ],
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          right: -10,
+                          bottom: -10,
+                          child: Icon(
+                            Symbols.iron,
+                            size: 120,
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'IRONING FREQUENCY',
+                              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: AppTheme.onTertiaryContainer,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              frequency,
+                              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                color: Colors.white,
+                                fontSize: 28,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              frequencySub,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.onTertiaryContainer,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    context: context,
+                    label: 'Balance Status',
+                    value: formatCurrency(currentBalance.abs()),
+                    subLabel: balanceSubtext,
+                    valueColor: balanceColor,
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                context: context,
-                label: 'Balance Status',
-                value: '₹1,420',
-                subLabel: 'Operational Reserve',
-              ),
-            ),
-          ],
-        ),
-      ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Text('Error: $err'),
     );
   }
 
@@ -231,18 +276,19 @@ class TransactionHistoryScreen extends ConsumerWidget {
     required String subLabel,
     IconData? subIcon,
     Color? subIconColor,
+    Color? valueColor,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.surfaceContainerHighest),
+        border: Border.all(color: AppTheme.outlineVariant),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+            blurRadius: 4,
+            offset: Offset(0, 1),
           ),
         ],
       ),
@@ -250,21 +296,19 @@ class TransactionHistoryScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label.toUpperCase(),
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
               color: AppTheme.onSurfaceVariant,
-              letterSpacing: 2.0,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-              color: AppTheme.primary,
-              fontSize: 28,
+            style: Theme.of(context).textTheme.displayMedium?.copyWith(
+              color: valueColor ?? AppTheme.onSurface,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Row(
             children: [
               if (subIcon != null) ...[
@@ -273,8 +317,8 @@ class TransactionHistoryScreen extends ConsumerWidget {
               ],
               Text(
                 subLabel,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: subIcon != null ? subIconColor : AppTheme.onSurfaceVariant,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -288,17 +332,9 @@ class TransactionHistoryScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Symbols.calendar_month, color: AppTheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              'Recent Transactions',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.primary,
-              ),
-            ),
-          ],
+        Text(
+          'Detailed Ledger',
+          style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: 16),
         Container(
@@ -319,19 +355,21 @@ class TransactionHistoryScreen extends ConsumerWidget {
               if (transactions.isEmpty) {
                 return const Padding(
                   padding: EdgeInsets.all(24.0),
-                  child: Text('No transactions found.'),
+                  child: Center(child: Text('No transactions found.')),
                 );
               }
 
+              // Group by month-year
               final groupedTransactions = <String, List<IroningTransaction>>{};
               for (var tx in transactions) {
+                String monthYear = 'Unknown Date';
                 try {
                   final date = DateTime.parse(tx.date);
-                  final monthYear = DateFormat('MMMM yyyy').format(date);
-                  groupedTransactions.putIfAbsent(monthYear, () => []).add(tx);
+                  monthYear = DateFormat('MMMM yyyy').format(date);
                 } catch (e) {
-                  groupedTransactions.putIfAbsent('Unknown Date', () => []).add(tx);
+                  // Ignore
                 }
+                groupedTransactions.putIfAbsent(monthYear, () => []).add(tx);
               }
 
               final widgets = <Widget>[];

@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import '../providers/app_providers.dart';
+import '../providers/db_provider.dart';
+import '../db/database.dart';
+import '../utils/currency_formatter.dart';
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   int _selectedTabIndex = 0;
 
   @override
@@ -37,11 +43,85 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _showAddRateDialog,
         backgroundColor: AppTheme.primaryContainer,
         foregroundColor: Colors.white,
         child: const Icon(Symbols.add, size: 32),
       ),
+    );
+  }
+
+  void _showAddRateDialog() {
+    String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    String rateStr = '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text(_selectedTabIndex == 0 ? 'Add Electricity Rate' : 'Add Ironing Fee'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    initialValue: date,
+                    decoration: const InputDecoration(labelText: 'Effective From (YYYY-MM-DD)'),
+                    onChanged: (val) => date = val,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: _selectedTabIndex == 0 ? 'Rate per kWh' : 'Price per garment',
+                    ),
+                    onChanged: (val) => rateStr = val,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final amount = double.tryParse(rateStr);
+                    if (amount == null) return;
+
+                    if (_selectedTabIndex == 0) {
+                      final rate = ElectricityRatesCompanion.insert(
+                        ratePerUnit: amount,
+                        effectiveFrom: date,
+                        createdAt: DateTime.now().toUtc().toIso8601String(),
+                        updatedAt: DateTime.now().toUtc().toIso8601String(),
+                        id: '', // Will be assigned by repo
+                      );
+                      await ref.read(electricityRepositoryProvider).addRate(rate);
+                      ref.invalidate(electricityActiveRateProvider);
+                      ref.invalidate(electricityRateHistoryProvider);
+                    } else {
+                      final price = IroningPricesCompanion.insert(
+                        pricePerCloth: amount,
+                        effectiveFrom: date,
+                        createdAt: DateTime.now().toUtc().toIso8601String(),
+                        updatedAt: DateTime.now().toUtc().toIso8601String(),
+                        id: '', // Will be assigned by repo
+                      );
+                      await ref.read(ironingRepositoryProvider).addPrice(price);
+                      ref.invalidate(ironingActivePriceProvider);
+                      ref.invalidate(ironingPriceHistoryProvider);
+                    }
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          }
+        );
+      }
     );
   }
 
@@ -74,22 +154,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildBentoGrid(BuildContext context) {
+    final nowString = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final activeRateAsync = ref.watch(electricityActiveRateProvider(nowString));
+    final activePriceAsync = ref.watch(ironingActivePriceProvider(nowString));
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-              child: _buildBentoCard(
-                context: context,
-                icon: Symbols.bolt,
-                iconColor: AppTheme.secondary,
-                badgeText: '+4.2% YoY',
-                badgeBgColor: AppTheme.secondaryContainer,
-                badgeTextColor: AppTheme.secondary,
-                title: 'Electricity Avg.',
-                value: '₹0.138',
-                valueSuffix: '/kWh',
-                height: 128,
+              child: activeRateAsync.when(
+                data: (rate) => _buildBentoCard(
+                  context: context,
+                  icon: Symbols.bolt,
+                  iconColor: AppTheme.secondary,
+                  badgeText: 'Active',
+                  badgeBgColor: AppTheme.secondaryContainer,
+                  badgeTextColor: AppTheme.secondary,
+                  title: 'Electricity Rate',
+                  value: rate != null ? formatCurrency(rate.ratePerUnit) : 'N/A',
+                  valueSuffix: '/kWh',
+                  height: 128,
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => const Text('Error'),
               ),
             ),
           ],
@@ -98,61 +186,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildBentoCard(
-                context: context,
-                icon: Symbols.iron,
-                iconColor: AppTheme.onPrimaryContainer,
-                badgeText: 'Stable',
-                badgeBgColor: AppTheme.surfaceContainer,
-                badgeTextColor: AppTheme.onPrimaryContainer,
-                title: 'Ironing Rate',
-                value: '₹2.50',
-                valueSuffix: '/item',
-                height: 128,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Container(
-                height: 128,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x0A000000),
-                      blurRadius: 4,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
+              child: activePriceAsync.when(
+                data: (price) => _buildBentoCard(
+                  context: context,
+                  icon: Symbols.iron,
+                  iconColor: AppTheme.primary,
+                  badgeText: 'Active',
+                  badgeBgColor: AppTheme.surfaceContainerHighest,
+                  badgeTextColor: AppTheme.onSurfaceVariant,
+                  title: 'Ironing Fee',
+                  value: price != null ? formatCurrency(price.pricePerCloth) : 'N/A',
+                  valueSuffix: '/item',
+                  height: 128,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Icon(Symbols.calendar_today, color: AppTheme.tertiaryFixedDim),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Next Scheduled Review',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppTheme.onPrimaryContainer,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Oct 15, 2024',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => const Text('Error'),
               ),
             ),
           ],
@@ -293,69 +341,73 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildPriceHistoryList(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHistoryItem(
-          context: context,
-          icon: Symbols.check_circle,
-          iconBgColor: AppTheme.secondaryContainer,
-          iconColor: AppTheme.secondary,
-          iconFilled: true,
-          title: 'Standard Residential',
-          isActive: true,
-          dateRange: 'Effective: Jan 01, 2024 – Present',
-          price: '₹0.142',
-          priceSuffix: 'per kWh',
-        ),
-        const SizedBox(height: 16),
-        _buildHistoryItem(
-          context: context,
-          icon: Symbols.history,
-          iconBgColor: AppTheme.surfaceContainer,
-          iconColor: AppTheme.onSurfaceVariant,
-          title: 'Standard Residential',
-          dateRange: 'Effective: Jun 15, 2023 – Dec 31, 2023',
-          price: '₹0.135',
-          priceSuffix: 'per kWh',
-          isDimmed: true,
-        ),
-        const SizedBox(height: 16),
-        _buildHistoryItem(
-          context: context,
-          icon: Symbols.history,
-          iconBgColor: AppTheme.surfaceContainer,
-          iconColor: AppTheme.onSurfaceVariant,
-          title: 'Standard Residential',
-          dateRange: 'Effective: Jan 01, 2023 – Jun 14, 2023',
-          price: '₹0.128',
-          priceSuffix: 'per kWh',
-          isDimmed: true,
-        ),
-        const SizedBox(height: 32),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: Text(
-            'IRONING SERVICE HISTORY',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppTheme.onPrimaryContainer,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        _buildHistoryItem(
-          context: context,
-          icon: Symbols.iron,
-          iconBgColor: AppTheme.surfaceContainerHigh,
-          iconColor: AppTheme.primary,
-          iconFilled: true,
-          title: 'Standard Pressing',
-          dateRange: 'Effective: Aug 10, 2023 – Present',
-          price: '₹2.50',
-          priceSuffix: 'per garment',
-        ),
-      ],
-    );
+    if (_selectedTabIndex == 0) {
+      final historyAsync = ref.watch(electricityRateHistoryProvider);
+      return historyAsync.when(
+        data: (history) {
+          if (history.isEmpty) return const Text('No rates found.');
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: history.map((rate) {
+              final isActive = history.first == rate; // Simple active check assuming descending order
+              return Column(
+                children: [
+                  _buildHistoryItem(
+                    context: context,
+                    icon: Symbols.bolt,
+                    iconBgColor: isActive ? AppTheme.secondaryContainer : AppTheme.surfaceContainer,
+                    iconColor: isActive ? AppTheme.secondary : AppTheme.onSurfaceVariant,
+                    iconFilled: isActive,
+                    title: 'Standard Residential',
+                    isActive: isActive,
+                    dateRange: 'Effective: ${rate.effectiveFrom}',
+                    price: formatCurrency(rate.ratePerUnit),
+                    priceSuffix: 'per kWh',
+                    isDimmed: !isActive,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }).toList(),
+          );
+        },
+        loading: () => const CircularProgressIndicator(),
+        error: (err, stack) => Text('Error: $err'),
+      );
+    } else {
+      final historyAsync = ref.watch(ironingPriceHistoryProvider);
+      return historyAsync.when(
+        data: (history) {
+          if (history.isEmpty) return const Text('No fees found.');
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: history.map((price) {
+              final isActive = history.first == price;
+              return Column(
+                children: [
+                  _buildHistoryItem(
+                    context: context,
+                    icon: Symbols.iron,
+                    iconBgColor: isActive ? AppTheme.surfaceContainerHigh : AppTheme.surfaceContainer,
+                    iconColor: isActive ? AppTheme.primary : AppTheme.onSurfaceVariant,
+                    iconFilled: isActive,
+                    title: 'Standard Pressing',
+                    isActive: isActive,
+                    dateRange: 'Effective: ${price.effectiveFrom}',
+                    price: formatCurrency(price.pricePerCloth),
+                    priceSuffix: 'per garment',
+                    isDimmed: !isActive,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }).toList(),
+          );
+        },
+        loading: () => const CircularProgressIndicator(),
+        error: (err, stack) => Text('Error: $err'),
+      );
+    }
   }
 
   Widget _buildHistoryItem({

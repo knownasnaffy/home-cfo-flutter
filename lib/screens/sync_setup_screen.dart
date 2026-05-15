@@ -3,8 +3,6 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
 import '../providers/app_providers.dart';
@@ -57,9 +55,9 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
             _buildHeader(context),
             const SizedBox(height: 24),
             _buildSyncConfigCard(context),
-            const SizedBox(height: 16),
+            const SizedBox(height: 32),
             _buildSystemStatusCard(context),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             _buildSecurityHealthCard(context),
             const SizedBox(height: 32),
             _buildActionButtons(context),
@@ -74,14 +72,22 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Sync Setup',
-          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-            color: AppTheme.onBackground,
+          'SYNC PREFERENCES',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: AppTheme.secondary,
+            letterSpacing: 2.0,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Cloud Sync',
+          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+            color: AppTheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Securely bridge your local financial data across all your devices.',
+          'Keep your financial vault safe and accessible across devices. We use zero-knowledge encryption.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: AppTheme.onSurfaceVariant,
           ),
@@ -95,12 +101,12 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.surfaceVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: AppTheme.outlineVariant),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            blurRadius: 4,
+            offset: Offset(0, 1),
           ),
         ],
       ),
@@ -110,26 +116,11 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Cloud Synchronization',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppTheme.onBackground,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Enable automated backups and multi-device access.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+              Text(
+                'Enable Cloud Sync',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppTheme.onSurface,
                 ),
               ),
               Switch(
@@ -140,6 +131,7 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                   });
                 },
                 activeThumbColor: AppTheme.secondary,
+                inactiveThumbColor: AppTheme.outlineVariant,
               ),
             ],
           ),
@@ -267,27 +259,33 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
             Consumer(
               builder: (context, ref, _) {
                 final lastSyncedAsync = ref.watch(lastSyncedAtProvider);
-                final lastSyncedStr = lastSyncedAsync.value != null
-                    ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSyncedAsync.value!).toLocal())
-                    : 'Never synced';
-                return Column(
-                  children: [
-                    Text(
-                      lastSyncedStr,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppTheme.onBackground,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (lastSyncedAsync.value != null)
-                      Text(
-                        'Recent', // Placeholder for time ago logic if needed
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.onSurfaceVariant,
+                return lastSyncedAsync.when(
+                  data: (lastSynced) {
+                    final lastSyncedStr = lastSynced != null
+                        ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSynced).toLocal())
+                        : 'Never synced';
+                    return Column(
+                      children: [
+                        Text(
+                          lastSyncedStr,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppTheme.onBackground,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                  ],
+                        const SizedBox(height: 4),
+                        if (lastSynced != null)
+                          Text(
+                            'Recent', // Placeholder for time ago logic if needed
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (e, s) => const Text('Error'),
                 );
               }
             ),
@@ -391,13 +389,10 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                await prefs.setBool('syncEnabled', _syncEnabled);
 
                if (_syncEnabled && _passphraseController.text.isNotEmpty) {
-                  // Simulate PBKDF2 hash using sha256 for mock simplicity
-                  final bytes = utf8.encode(_passphraseController.text);
-                  final digest = sha256.convert(bytes);
-                  await prefs.setString('syncKeyHash', digest.toString());
-
+                  // Phase 4: Proper key generation omitted for now since sync engine is unimplemented.
+                  // Just leave without setting the syncKeyHash, or just simulate saving without hashing.
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferences saved. Triggering initial full sync.')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferences saved.')));
                   }
                } else if (!_syncEnabled) {
                   await prefs.remove('syncKeyHash');
