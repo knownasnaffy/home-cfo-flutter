@@ -328,6 +328,8 @@ class ElectricityHomeScreen extends ConsumerWidget {
                     deltaText = '+${delta.toStringAsFixed(1)}';
                   }
 
+                  final prevReading = index < readings.length - 1 ? readings[index + 1] : null;
+
                   return Column(
                     children: [
                       _buildReadingRow(
@@ -335,7 +337,10 @@ class ElectricityHomeScreen extends ConsumerWidget {
                         date: r.readingDate,
                         reading: '${r.meterValue} kWh',
                         delta: deltaText,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDetailScreen())),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReadingDetailScreen(
+                          reading: r,
+                          previousReading: prevReading,
+                        ))),
                       ),
                       if (r != readings.last) const Divider(height: 1, color: AppTheme.surfaceContainerHigh),
                     ],
