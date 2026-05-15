@@ -55,14 +55,15 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _buildSyncConfigCard(context),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             _buildSystemStatusCard(context),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             _buildSecurityHealthCard(context),
             const SizedBox(height: 32),
             _buildActionButtons(context),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -118,14 +119,15 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                   children: [
                     Text(
                       'Cloud Synchronization',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppTheme.onBackground,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Enable automated backups and multi-device access.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.onSurfaceVariant,
                       ),
                     ),
@@ -269,7 +271,7 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                 final lastSyncedAsync = ref.watch(lastSyncedAtProvider);
                 final lastSyncedStr = lastSyncedAsync.value != null
                     ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSyncedAsync.value!).toLocal())
-                    : 'Never synced';
+                    : 'Never';
                 return Column(
                   children: [
                     Text(
@@ -279,14 +281,6 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    if (lastSyncedAsync.value != null)
-                      Text(
-                        'Recent', // Placeholder for time ago logic if needed
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.onSurfaceVariant,
-                        ),
-                      ),
                   ],
                 );
               }
@@ -391,7 +385,6 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                await prefs.setBool('syncEnabled', _syncEnabled);
 
                if (_syncEnabled && _passphraseController.text.isNotEmpty) {
-                  // Simulate PBKDF2 hash using sha256 for mock simplicity
                   final bytes = utf8.encode(_passphraseController.text);
                   final digest = sha256.convert(bytes);
                   await prefs.setString('syncKeyHash', digest.toString());

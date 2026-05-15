@@ -200,7 +200,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     final lastSyncedAsync = ref.watch(lastSyncedAtProvider);
                     final lastSynced = lastSyncedAsync.value;
                     return Text(
-                      lastSynced != null ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSynced).toLocal()) : 'Never synced',
+                      lastSynced != null ? DateFormat('MMM dd, hh:mm a').format(DateTime.parse(lastSynced).toLocal()) : 'Never',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,

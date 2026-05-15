@@ -1,23 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
+import 'package:drift/drift.dart' as drift;
+
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
+import '../providers/app_providers.dart';
+import '../db/database.dart';
+import '../providers/db_provider.dart';
+import '../utils/currency_formatter.dart';
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   int _selectedTabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    final rateHistoryAsync = ref.watch(electricityRateHistoryProvider);
+    final priceHistoryAsync = ref.watch(ironingPriceHistoryProvider);
+    final rateAsync = ref.watch(electricityActiveRateProvider(DateFormat('yyyy-MM-dd').format(DateTime.now())));
+    final priceAsync = ref.watch(ironingActivePriceProvider(DateFormat('yyyy-MM-dd').format(DateTime.now())));
+
     return Scaffold(
       appBar: const TopAppBar(
-        showBackButton: true, // Ensuring it has a back button since it's reachable via Settings / Dashboard
+        showBackButton: true,
         showSync: true,
         avatarUrl: '',
       ),
@@ -28,16 +42,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
           children: [
             _buildHeader(context),
             const SizedBox(height: 16),
-            _buildBentoGrid(context),
+            _buildBentoGrid(context, rateAsync, priceAsync),
             const SizedBox(height: 24),
             _buildFilterTabs(context),
             const SizedBox(height: 16),
-            _buildPriceHistoryList(context),
+            _buildPriceHistoryList(context, rateHistoryAsync, priceHistoryAsync),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _showAddForm,
         backgroundColor: AppTheme.primaryContainer,
         foregroundColor: Colors.white,
         child: const Icon(Symbols.add, size: 32),
@@ -45,26 +59,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  void _showAddForm() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: AddPriceForm(isIroning: _selectedTabIndex == 1),
+        );
+      },
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'UTILITY MANAGEMENT',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppTheme.onPrimaryContainer,
-                letterSpacing: 2.0,
+              'Pricing History',
+              style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                color: AppTheme.onBackground,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
-              'History',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                color: AppTheme.onSurface,
+              'Log of historical rates and service fees.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -73,89 +100,59 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildBentoGrid(BuildContext context) {
-    return Column(
+  Widget _buildBentoGrid(BuildContext context, AsyncValue<ElectricityRate?> rateAsync, AsyncValue<IroningPrice?> priceAsync) {
+    if (_selectedTabIndex == 0) {
+      return rateAsync.when(
+        data: (rate) {
+          final val = rate != null ? formatCurrency(rate.ratePerUnit) : 'N/A';
+          final dateStr = rate != null ? DateFormat('MMM dd, yyyy').format(DateTime.parse(rate.effectiveFrom)) : 'N/A';
+          return _buildBentoRow(context, val, '/ kWh', dateStr);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Text('Error: $err'),
+      );
+    } else {
+      return priceAsync.when(
+        data: (price) {
+          final val = price != null ? formatCurrency(price.pricePerCloth) : 'N/A';
+          final dateStr = price != null ? DateFormat('MMM dd, yyyy').format(DateTime.parse(price.effectiveFrom)) : 'N/A';
+          return _buildBentoRow(context, val, '/ pc', dateStr);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Text('Error: $err'),
+      );
+    }
+  }
+
+  Widget _buildBentoRow(BuildContext context, String value, String suffix, String lastChangeDate) {
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildBentoCard(
-                context: context,
-                icon: Symbols.bolt,
-                iconColor: AppTheme.secondary,
-                badgeText: '+4.2% YoY',
-                badgeBgColor: AppTheme.secondaryContainer,
-                badgeTextColor: AppTheme.secondary,
-                title: 'Electricity Avg.',
-                value: '₹0.138',
-                valueSuffix: '/kWh',
-                height: 128,
-              ),
-            ),
-          ],
+        Expanded(
+          child: _buildBentoCard(
+            context: context,
+            title: 'Active Rate',
+            value: value,
+            valueSuffix: suffix,
+            icon: Symbols.check_circle,
+            iconColor: AppTheme.secondary,
+            badgeText: 'CURRENT',
+            badgeBgColor: AppTheme.secondaryFixed,
+            badgeTextColor: AppTheme.onSecondaryFixedVariant,
+          ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildBentoCard(
-                context: context,
-                icon: Symbols.iron,
-                iconColor: AppTheme.onPrimaryContainer,
-                badgeText: 'Stable',
-                badgeBgColor: AppTheme.surfaceContainer,
-                badgeTextColor: AppTheme.onPrimaryContainer,
-                title: 'Ironing Rate',
-                value: '₹2.50',
-                valueSuffix: '/item',
-                height: 128,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Container(
-                height: 128,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x0A000000),
-                      blurRadius: 4,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Icon(Symbols.calendar_today, color: AppTheme.tertiaryFixedDim),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Next Scheduled Review',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppTheme.onPrimaryContainer,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Oct 15, 2024',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildBentoCard(
+            context: context,
+            title: 'Last Change',
+            value: lastChangeDate.split(',').first,
+            valueSuffix: lastChangeDate.contains(',') ? ',${lastChangeDate.split(',').last}' : '',
+            icon: Symbols.update,
+            iconColor: AppTheme.primary,
+            badgeText: 'RECENT',
+            badgeBgColor: AppTheme.surfaceContainerHigh,
+            badgeTextColor: AppTheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -163,18 +160,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildBentoCard({
     required BuildContext context,
+    required String title,
+    required String value,
+    required String valueSuffix,
     required IconData icon,
     required Color iconColor,
     required String badgeText,
     required Color badgeBgColor,
     required Color badgeTextColor,
-    required String title,
-    required String value,
-    required String valueSuffix,
-    required double height,
   }) {
     return Container(
-      height: height,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerLowest,
@@ -292,70 +287,84 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildPriceHistoryList(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHistoryItem(
-          context: context,
-          icon: Symbols.check_circle,
-          iconBgColor: AppTheme.secondaryContainer,
-          iconColor: AppTheme.secondary,
-          iconFilled: true,
-          title: 'Standard Residential',
-          isActive: true,
-          dateRange: 'Effective: Jan 01, 2024 – Present',
-          price: '₹0.142',
-          priceSuffix: 'per kWh',
-        ),
-        const SizedBox(height: 16),
-        _buildHistoryItem(
-          context: context,
-          icon: Symbols.history,
-          iconBgColor: AppTheme.surfaceContainer,
-          iconColor: AppTheme.onSurfaceVariant,
-          title: 'Standard Residential',
-          dateRange: 'Effective: Jun 15, 2023 – Dec 31, 2023',
-          price: '₹0.135',
-          priceSuffix: 'per kWh',
-          isDimmed: true,
-        ),
-        const SizedBox(height: 16),
-        _buildHistoryItem(
-          context: context,
-          icon: Symbols.history,
-          iconBgColor: AppTheme.surfaceContainer,
-          iconColor: AppTheme.onSurfaceVariant,
-          title: 'Standard Residential',
-          dateRange: 'Effective: Jan 01, 2023 – Jun 14, 2023',
-          price: '₹0.128',
-          priceSuffix: 'per kWh',
-          isDimmed: true,
-        ),
-        const SizedBox(height: 32),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: Text(
-            'IRONING SERVICE HISTORY',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppTheme.onPrimaryContainer,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        _buildHistoryItem(
-          context: context,
-          icon: Symbols.iron,
-          iconBgColor: AppTheme.surfaceContainerHigh,
-          iconColor: AppTheme.primary,
-          iconFilled: true,
-          title: 'Standard Pressing',
-          dateRange: 'Effective: Aug 10, 2023 – Present',
-          price: '₹2.50',
-          priceSuffix: 'per garment',
-        ),
-      ],
-    );
+  Widget _buildPriceHistoryList(BuildContext context, AsyncValue<List<ElectricityRate>> rateHistoryAsync, AsyncValue<List<IroningPrice>> priceHistoryAsync) {
+    if (_selectedTabIndex == 0) {
+      return rateHistoryAsync.when(
+        data: (rates) {
+          if (rates.isEmpty) {
+             return const Padding(
+               padding: EdgeInsets.all(24.0),
+               child: Text('No rate history found.'),
+             );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: rates.asMap().entries.map((entry) {
+              final index = entry.key;
+              final rate = entry.value;
+              final isActive = index == 0;
+              final dateStr = DateFormat('MMM dd, yyyy').format(DateTime.parse(rate.effectiveFrom));
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: _buildHistoryItem(
+                  context: context,
+                  icon: isActive ? Symbols.check_circle : Symbols.history,
+                  iconBgColor: isActive ? AppTheme.secondaryContainer : AppTheme.surfaceContainer,
+                  iconColor: isActive ? AppTheme.secondary : AppTheme.onSurfaceVariant,
+                  iconFilled: isActive,
+                  title: 'Electricity Rate',
+                  isActive: isActive,
+                  dateRange: 'Effective: $dateStr – ${isActive ? 'Present' : ''}',
+                  price: formatCurrency(rate.ratePerUnit),
+                  priceSuffix: 'per kWh',
+                  isDimmed: !isActive,
+                ),
+              );
+            }).toList(),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Text('Error: $err'),
+      );
+    } else {
+      return priceHistoryAsync.when(
+        data: (prices) {
+          if (prices.isEmpty) {
+             return const Padding(
+               padding: EdgeInsets.all(24.0),
+               child: Text('No price history found.'),
+             );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: prices.asMap().entries.map((entry) {
+              final index = entry.key;
+              final price = entry.value;
+              final isActive = index == 0;
+              final dateStr = DateFormat('MMM dd, yyyy').format(DateTime.parse(price.effectiveFrom));
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: _buildHistoryItem(
+                  context: context,
+                  icon: isActive ? Symbols.iron : Symbols.history,
+                  iconBgColor: isActive ? AppTheme.surfaceContainerHigh : AppTheme.surfaceContainer,
+                  iconColor: isActive ? AppTheme.primary : AppTheme.onSurfaceVariant,
+                  iconFilled: isActive,
+                  title: 'Standard Pressing',
+                  isActive: isActive,
+                  dateRange: 'Effective: $dateStr – ${isActive ? 'Present' : ''}',
+                  price: formatCurrency(price.pricePerCloth),
+                  priceSuffix: 'per garment',
+                  isDimmed: !isActive,
+                ),
+              );
+            }).toList(),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Text('Error: $err'),
+      );
+    }
   }
 
   Widget _buildHistoryItem({
@@ -468,6 +477,119 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AddPriceForm extends ConsumerStatefulWidget {
+  final bool isIroning;
+
+  const AddPriceForm({super.key, required this.isIroning});
+
+  @override
+  ConsumerState<AddPriceForm> createState() => _AddPriceFormState();
+}
+
+class _AddPriceFormState extends ConsumerState<AddPriceForm> {
+  final _amountController = TextEditingController();
+  DateTime _selectedDate = DateTime.now();
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null) return;
+
+    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+
+    if (widget.isIroning) {
+      await ref.read(ironingRepositoryProvider).addPrice(IroningPricesCompanion(
+        id: drift.Value(const Uuid().v4()),
+        effectiveFrom: drift.Value(dateStr),
+        pricePerCloth: drift.Value(amount),
+        createdAt: drift.Value(DateTime.now().toUtc().toIso8601String()),
+        updatedAt: drift.Value(DateTime.now().toUtc().toIso8601String()),
+      ));
+      ref.invalidate(ironingPriceHistoryProvider);
+      ref.invalidate(ironingActivePriceProvider);
+    } else {
+      await ref.read(electricityRepositoryProvider).addRate(ElectricityRatesCompanion(
+        id: drift.Value(const Uuid().v4()),
+        effectiveFrom: drift.Value(dateStr),
+        ratePerUnit: drift.Value(amount),
+        createdAt: drift.Value(DateTime.now().toUtc().toIso8601String()),
+        updatedAt: drift.Value(DateTime.now().toUtc().toIso8601String()),
+      ));
+      ref.invalidate(electricityRateHistoryProvider);
+      ref.invalidate(electricityActiveRateProvider);
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.isIroning ? 'Add Ironing Price' : 'Add Electricity Rate',
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Effective Date: ${DateFormat('yyyy-MM-dd').format(_selectedDate)}'),
+              ),
+              TextButton(
+                onPressed: _pickDate,
+                child: const Text('Change'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _amountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: widget.isIroning ? 'Price per garment' : 'Rate per kWh',
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _save,
+              child: const Text('Save'),
             ),
           ),
         ],
