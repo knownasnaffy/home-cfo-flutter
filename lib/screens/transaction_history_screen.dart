@@ -15,9 +15,11 @@ class TransactionHistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactionsAsync = ref.watch(allIroningTransactionsProvider);
+    final balanceAsync = ref.watch(ironingBalanceProvider);
+
     return Scaffold(
       appBar: const TopAppBar(
-        showBackButton: true, // Enabling back button since this is a sub-screen
+        showBackButton: true,
         showSync: true,
         avatarUrl: '',
       ),
@@ -28,7 +30,7 @@ class TransactionHistoryScreen extends ConsumerWidget {
           children: [
             _buildHeader(context),
             const SizedBox(height: 24),
-            _buildStatsBentoGrid(context),
+            _buildStatsBentoGrid(context, transactionsAsync, balanceAsync),
             const SizedBox(height: 32),
             _buildTransactionLedger(context, transactionsAsync),
             const SizedBox(height: 32),
@@ -42,21 +44,21 @@ class TransactionHistoryScreen extends ConsumerWidget {
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start, // Changed from end to start for better flex wrapping
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'History',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: AppTheme.primary,
+                'Financial Ledger',
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  color: AppTheme.onBackground,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Manage your domestic maintenance records.',
+                'Complete record of all domestic ironing transactions.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppTheme.onSurfaceVariant,
                 ),
@@ -64,24 +66,25 @@ class TransactionHistoryScreen extends ConsumerWidget {
             ],
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             _buildHeaderButton(
               context: context,
               icon: Symbols.filter_list,
-              label: 'Filters',
-              backgroundColor: AppTheme.surfaceContainer,
-              foregroundColor: AppTheme.onSurface,
-              borderColor: AppTheme.outlineVariant,
+              label: 'Filter',
+              backgroundColor: AppTheme.surfaceContainerLow,
+              foregroundColor: AppTheme.onSurfaceVariant,
+              borderColor: AppTheme.surfaceContainerHighest,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(height: 8),
             _buildHeaderButton(
               context: context,
               icon: Symbols.download,
               label: 'Export',
-              backgroundColor: AppTheme.primary,
-              foregroundColor: AppTheme.onPrimary,
+              backgroundColor: AppTheme.primaryContainer,
+              foregroundColor: Colors.white,
             ),
           ],
         ),
@@ -108,7 +111,9 @@ class TransactionHistoryScreen extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: () {
+             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon')));
+          },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -127,8 +132,45 @@ class TransactionHistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsBentoGrid(BuildContext context) {
-    // Note: To match web grid design on mobile, it flows column-wise.
+  Widget _buildStatsBentoGrid(BuildContext context, AsyncValue<List<IroningTransaction>> transactionsAsync, AsyncValue<double> balanceAsync) {
+    double monthlySpend = 0.0;
+    int frequencyCount = 0;
+
+    if (transactionsAsync.value != null) {
+      final now = DateTime.now();
+      final currentMonthStart = DateTime(now.year, now.month, 1);
+
+      for (final tx in transactionsAsync.value!) {
+        try {
+          final date = DateTime.parse(tx.date);
+          if (date.isAfter(currentMonthStart) || date.isAtSameMomentAs(currentMonthStart)) {
+            if (tx.type == 'regular') {
+              monthlySpend += tx.amount ?? 0.0;
+              frequencyCount++;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    final balanceStr = balanceAsync.when(
+      data: (bal) => formatCurrency(bal.abs()),
+      loading: () => '...',
+      error: (_, __) => 'Error',
+    );
+
+    final balanceColor = balanceAsync.when(
+      data: (bal) => bal > 0 ? AppTheme.secondary : (bal < 0 ? AppTheme.error : AppTheme.onSurfaceVariant),
+      loading: () => AppTheme.onSurfaceVariant,
+      error: (_, __) => AppTheme.onSurfaceVariant,
+    );
+
+    final balancePrefix = balanceAsync.when(
+      data: (bal) => bal < 0 ? '-' : (bal > 0 ? '+' : ''),
+      loading: () => '',
+      error: (_, __) => '',
+    );
+
     return Column(
       children: [
         Row(
@@ -137,10 +179,11 @@ class TransactionHistoryScreen extends ConsumerWidget {
               child: _buildStatCard(
                 context: context,
                 label: 'Monthly Spend',
-                value: '₹284',
-                subLabel: '12% vs last month',
-                subIcon: Symbols.trending_down,
+                value: formatCurrency(monthlySpend),
+                subLabel: 'This month',
+                subIcon: Symbols.payments,
                 subIconColor: AppTheme.secondary,
+                valueColor: AppTheme.primary,
               ),
             ),
           ],
@@ -186,7 +229,7 @@ class TransactionHistoryScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Weekly',
+                          '$frequencyCount',
                           style: Theme.of(context).textTheme.displayLarge?.copyWith(
                             color: Colors.white,
                             fontSize: 28,
@@ -194,7 +237,7 @@ class TransactionHistoryScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Every Tuesday & Friday',
+                          'Services this month',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.onTertiaryContainer,
                           ),
@@ -214,8 +257,9 @@ class TransactionHistoryScreen extends ConsumerWidget {
               child: _buildStatCard(
                 context: context,
                 label: 'Balance Status',
-                value: '₹1,420',
+                value: '$balancePrefix$balanceStr',
                 subLabel: 'Operational Reserve',
+                valueColor: balanceColor,
               ),
             ),
           ],
@@ -231,6 +275,7 @@ class TransactionHistoryScreen extends ConsumerWidget {
     required String subLabel,
     IconData? subIcon,
     Color? subIconColor,
+    required Color valueColor,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -241,8 +286,8 @@ class TransactionHistoryScreen extends ConsumerWidget {
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+            blurRadius: 4,
+            offset: Offset(0, 1),
           ),
         ],
       ),
@@ -260,7 +305,7 @@ class TransactionHistoryScreen extends ConsumerWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.displayLarge?.copyWith(
-              color: AppTheme.primary,
+              color: valueColor,
               fontSize: 28,
             ),
           ),
