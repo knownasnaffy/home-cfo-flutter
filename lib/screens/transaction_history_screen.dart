@@ -372,7 +372,9 @@ class TransactionHistoryScreen extends ConsumerWidget {
                   String dateStr = tx.date;
                   try {
                     dateStr = DateFormat('MMM d, yyyy').format(DateTime.parse(tx.date));
-                  } catch (e) {}
+                  } catch (e) {
+                    // Ignore parsing error, fallback to raw string
+                  }
 
                   widgets.add(_buildLedgerItem(
                     context: context,

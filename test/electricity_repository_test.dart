@@ -51,7 +51,7 @@ void main() {
   test('ElectricityRepository getConsumptionForReading computes correctly based on ordered readings', () async {
     final now = DateTime.now().toUtc().toIso8601String();
 
-    final id1 = 'id-1';
+    const id1 = 'id-1';
     await db.into(db.electricityReadings).insert(
       ElectricityReadingsCompanion.insert(
         id: id1,
@@ -63,7 +63,7 @@ void main() {
       )
     );
 
-    final id2 = 'id-2';
+    const id2 = 'id-2';
     await db.into(db.electricityReadings).insert(
       ElectricityReadingsCompanion.insert(
         id: id2,
@@ -75,7 +75,7 @@ void main() {
       )
     );
 
-    final id3 = 'id-3';
+    const id3 = 'id-3';
     await db.into(db.electricityReadings).insert(
       ElectricityReadingsCompanion.insert(
         id: id3,
@@ -100,7 +100,7 @@ void main() {
   test('ElectricityRepository updateReading modifies reading, updates updatedAt, and clears syncedAt', () async {
     final oldTime = DateTime.now().subtract(const Duration(days: 1)).toUtc().toIso8601String();
 
-    final id1 = 'id-1';
+    const id1 = 'id-1';
     await db.into(db.electricityReadings).insert(
       ElectricityReadingsCompanion.insert(
         id: id1,

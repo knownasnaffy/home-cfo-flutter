@@ -548,7 +548,7 @@ class DashboardScreen extends ConsumerWidget {
               );
             },
             loading: () => const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
-            error: (err, stack) => Padding(padding: const EdgeInsets.all(16), child: Text('Error loading transactions')),
+            error: (err, stack) => const Padding(padding: EdgeInsets.all(16), child: Text('Error loading transactions')),
           ),
         ),
       ],
