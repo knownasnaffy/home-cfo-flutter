@@ -3,9 +3,11 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_theme.dart';
 import '../widgets/top_app_bar.dart';
 import 'history_screen.dart';
+import '../db/database.dart';
 
 class ReadingDetailScreen extends StatelessWidget {
-  const ReadingDetailScreen({super.key});
+  final ElectricityReading reading;
+  const ReadingDetailScreen({super.key, required this.reading});
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +96,7 @@ class ReadingDetailScreen extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      '42,891.50',
+                      '${reading.meterValue}',
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         color: Colors.white,
                         fontSize: 36,
@@ -111,7 +113,7 @@ class ReadingDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Recorded on Oct 24, 2023 • 09:42 AM',
+                  'Recorded on ${reading.readingDate}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppTheme.onPrimaryContainer.withValues(alpha: 0.8),
                   ),
@@ -142,7 +144,7 @@ class ReadingDetailScreen extends StatelessWidget {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            '452.20',
+                            '—',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith( // 2xl is 24px usually
                               color: AppTheme.primary,
                               fontWeight: FontWeight.w700,
@@ -176,12 +178,12 @@ class ReadingDetailScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Symbols.trending_up, color: AppTheme.error, size: 20),
+                          const Icon(Symbols.trending_flat, color: AppTheme.outline, size: 20),
                           const SizedBox(width: 4),
                           Text(
-                            '+12.4%',
+                            '—',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppTheme.error,
+                              color: AppTheme.outline,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -226,11 +228,11 @@ class ReadingDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              _buildContextRow(context, 'Cycle Name', 'Q4 Autumn Fiscal'),
+              _buildContextRow(context, 'Cycle Name', reading.billingCycle.toUpperCase()),
               const SizedBox(height: 16),
-              _buildContextRow(context, 'Period', 'Sep 25 - Oct 24'),
+              _buildContextRow(context, 'Period', '—'),
               const SizedBox(height: 16),
-              _buildContextRow(context, 'Rate Class', 'Residential Peak-Saver'),
+              _buildContextRow(context, 'Rate Class', '—'),
             ],
           ),
         ),
@@ -256,7 +258,7 @@ class ReadingDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Source ID: CFO-9921',
+                'Source ID: ${reading.id.length >= 8 ? reading.id.substring(0, 8) : reading.id}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppTheme.outlineVariant,
                 ),
@@ -316,33 +318,25 @@ class ReadingDetailScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _buildBarChartRow(
             context: context,
-            label: 'Previous (Sep)',
+            label: 'Previous',
             labelColor: AppTheme.outline,
-            value: '402.15 kWh',
+            value: '—',
             valueColor: AppTheme.primary,
             barColor: AppTheme.outlineVariant,
             barHeight: 12,
-            percentage: 0.75,
+            percentage: 0.0,
           ),
           const SizedBox(height: 16),
           _buildBarChartRow(
             context: context,
-            label: 'Current (Oct)',
+            label: 'Current',
             labelColor: AppTheme.primary,
-            value: '452.20 kWh',
+            value: '—',
             valueColor: AppTheme.primary,
             barColor: AppTheme.secondary,
             barHeight: 16,
-            percentage: 0.85,
+            percentage: 0.0,
             isBold: true,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'The higher consumption correlates with the recorded temperature drop of 8°C in this billing period.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.outline,
-              fontStyle: FontStyle.italic,
-            ),
           ),
         ],
       ),
@@ -406,6 +400,9 @@ class ReadingDetailScreen extends StatelessWidget {
   }
 
   Widget _buildNotesSection(BuildContext context) {
+    if (reading.note == null || reading.note!.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -438,7 +435,7 @@ class ReadingDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Reading taken manually. Meter face was clear of obstruction. No signs of tampering or damage to the seal. Compared value against smart hub app, variance within expected 0.5% margin. Note: Outdoor heating system activated on Oct 15.',
+            reading.note!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppTheme.onSurfaceVariant,
               height: 1.6,
